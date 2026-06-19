@@ -1,14 +1,13 @@
-
-export interface CreateUsuarioDto {
+export interface CrearUsuarioDto {
     rolId: string;
     nombre?: string;
     apellidos?: string;
     dni?: string;
     correo?: string;
-    password?: string;
+    password: string;
 }
 
-export interface UpdateUsuarioDto {
+export interface ActualizarUsuarioDto {
     rolId?: string;
     nombre?: string;
     apellidos?: string;
@@ -17,8 +16,7 @@ export interface UpdateUsuarioDto {
     password?: string;
 }
 
-
-export interface UsuarioResponseDto {
+export interface RespuestaUsuarioDto {
     id: string;
     rolId: string;
     nombre: string | null;

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Schema } from 'joi';
 import { ApiError } from '@utils/ApiError';
 
-export const validate = (schema: Schema, property: 'body' | 'query' | 'params' = 'body') => {
+export const validar = (schema: Schema, property: 'body' | 'query' | 'params' = 'body') => {
   return (req: Request, res: Response, next: NextFunction) => {
     const { error, value } = schema.validate(req[property], {
       abortEarly: false,

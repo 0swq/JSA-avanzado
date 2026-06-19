@@ -1,0 +1,17 @@
+export interface CrearHistorialDto {
+  nombreAccion: string;
+  accion: string;
+  hechoPorId: string;
+  modulo?: string;
+  ipUsuario?: string;
+}
+
+export interface RespuestaHistorialDto {
+  id: string;
+  nombreAccion: string;
+  accion: string;
+  hechoPorId: string;
+  modulo: string | null;
+  ipUsuario: string | null;
+  creadoEn: Date;
+}
