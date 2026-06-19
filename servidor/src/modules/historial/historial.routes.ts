@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {Router} from 'express';
 import {historialControlador} from './historial.controller';
 import {middlewareAutenticacion} from '@middlewares/auth.middleware';

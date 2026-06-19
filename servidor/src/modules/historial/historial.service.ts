@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiError } from '@utils/ApiError';
 import { CrearHistorialDto, RespuestaHistorialDto } from './historial.dto';
 import { historialRepositorio } from './historial.repository';

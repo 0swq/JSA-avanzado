@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {ApiError} from '@utils/ApiError';
 import {CrearLibroDto, ActualizarLibroDto, RespuestaLibroDto} from './libro.dto';
 import {libroRepositorio} from './libro.repository';

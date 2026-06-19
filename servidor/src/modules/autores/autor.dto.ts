@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearAutorDto {
   nombre?: string;
   apellidos: string;

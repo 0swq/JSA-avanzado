@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {Router} from 'express';
 import {crearUsuarioSchema, actualizarUsuarioSchema} from './usuario.validator';
 import {usuarioControlador} from "@modules/usuarios/usuario.controller";

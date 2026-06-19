@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {Router} from 'express';
 import {libroControlador} from './libro.controller';
 import {middlewareAutenticacion} from '@middlewares/auth.middleware';

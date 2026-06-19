@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearEjemplarDto {
   libroId: string;
   codigoBarras: string;

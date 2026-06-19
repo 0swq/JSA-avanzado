@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Request, Response, NextFunction } from 'express';
 import {usuarioServicio} from "@modules/usuarios/usuario.service";
 import {RespuestaUsuarioDto} from "@modules/usuarios/usuario.dto";

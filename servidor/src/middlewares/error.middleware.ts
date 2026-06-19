@@ -6,11 +6,11 @@ export const errorMiddleware = (err: any, req: Request, res: Response, next: Nex
     return next(err);
   }
 
-  if (err.isOperational) {
-    return res.status(err.statusCode).json({
+  if (err.esOperacional) {
+    return res.status(err.codigoEstado).json({
       success: false,
       message: err.message,
-      errors: err.errors || [],
+      errors: err.errores || [],
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     });
   }

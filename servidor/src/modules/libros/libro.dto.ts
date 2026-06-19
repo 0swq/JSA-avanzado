@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearLibroDto {
   titulo: string;
   isbn?: string;

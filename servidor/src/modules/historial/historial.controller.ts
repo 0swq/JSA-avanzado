@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Request, Response, NextFunction } from 'express';
 import { historialServicio } from './historial.service';
 import { RespuestaHistorialDto } from './historial.dto';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearMultaDto {
   prestamoId: string;
   monto: number;

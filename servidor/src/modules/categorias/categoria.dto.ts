@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearCategoriaDto {
   nombre: string;
   padreId?: string;

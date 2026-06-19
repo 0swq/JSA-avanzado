@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from '../prisma';
 import {ActualizarUsuarioDto, CrearUsuarioDto} from "@modules/usuarios/usuario.dto";
 

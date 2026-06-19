@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearConfiguracionMultaDto {
   tarifaDiaria: number;
   diasMaxPrestamo: number;

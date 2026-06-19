@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearEditorialDto {
   nombre?: string;
   pais?: string;

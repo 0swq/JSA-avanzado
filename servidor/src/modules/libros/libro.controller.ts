@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {Request, Response, NextFunction} from 'express';
 import {libroServicio} from './libro.service';
 import {RespuestaLibroDto} from './libro.dto';

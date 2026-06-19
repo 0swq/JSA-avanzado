@@ -1,0 +1,49 @@
+### Variables
+@baseUrl = http://localhost:3000/api/usuarios
+@login = variable value
+@token = {{login.response.body.data.token}}
+
+### Login (obtener token)
+# @name login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@biblioteca.edu",
+  "password": "12345678"
+}
+
+### GET todos los usuarios
+GET {{baseUrl}}
+Authorization: Bearer {{token}}
+
+### GET usuario por ID
+GET {{baseUrl}}/550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer {{token}}
+
+### POST crear usuario
+POST {{baseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rolId": "550e8400-e29b-41d4-a716-446655440001",
+  "nombre": "Juan",
+  "apellidos": "Pérez",
+  "dni": "12345678",
+  "correo": "juan@email.com",
+  "password": "12345678"
+}
+
+### PATCH actualizar usuario
+PATCH {{baseUrl}}/550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Juan Carlos"
+}
+
+### DELETE eliminar usuario
+DELETE {{baseUrl}}/550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer {{token}}

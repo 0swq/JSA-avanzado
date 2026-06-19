@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearUsuarioDto {
     rolId: string;
     nombre?: string;

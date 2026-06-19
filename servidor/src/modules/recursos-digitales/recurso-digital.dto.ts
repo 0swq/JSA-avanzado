@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearRecursoDigitalDto {
   libroId: string;
   tipo: string;

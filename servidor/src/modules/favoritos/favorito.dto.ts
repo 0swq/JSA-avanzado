@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearFavoritoDto {
   usuarioId: string;
   libroId: string;

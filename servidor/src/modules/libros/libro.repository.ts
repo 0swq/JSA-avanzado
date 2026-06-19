@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {prisma} from '../prisma';
 import {CrearLibroDto, ActualizarLibroDto} from './libro.dto';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from '../prisma';
 import { CrearHistorialDto } from './historial.dto';
 

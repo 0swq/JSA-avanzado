@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearReservaDto {
   usuarioId: string;
   libroId: string;

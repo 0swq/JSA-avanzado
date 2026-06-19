@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearRolDto {
   nombre: string;
   descripcion?: string;

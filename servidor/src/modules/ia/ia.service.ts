@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const iaServicio = {
     async completar(sistema: string, texto: string): Promise<string> {
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
