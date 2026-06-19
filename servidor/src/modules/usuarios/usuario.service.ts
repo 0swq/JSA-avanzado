@@ -21,16 +21,18 @@ export const usuarioServicio = {
     },
 
     async crear(data: CrearUsuarioDto) {
-        const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
-        return usuarioRepositorio.crear({...data, passwordHash});
+        const {password, ...resto} = data;
+        const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+        return usuarioRepositorio.crear({...resto, passwordHash});
     },
 
     async actualizar(id: string, data: ActualizarUsuarioDto) {
         await usuarioServicio.obtenerPorId(id);
-        const passwordHash = data.password
-            ? await bcrypt.hash(data.password, SALT_ROUNDS)
+        const { password, ...resto } = data;
+        const passwordHash = password
+            ? await bcrypt.hash(password, SALT_ROUNDS)
             : undefined;
-        return usuarioRepositorio.actualizar(id, {...data, passwordHash});
+        return usuarioRepositorio.actualizar(id, { ...resto, passwordHash });
     },
 
     async eliminar(id: string) {

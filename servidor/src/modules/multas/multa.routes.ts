@@ -10,10 +10,9 @@ const router = Router();
 router.use(middlewareAutenticacion);
 
 router.get('/', middlewareRol(['admin', 'bibliotecario']), validar(filtroMultaSchema, 'query'), multaControlador.obtenerTodos);
-router.get('/usuario/:usuarioId', multaControlador.obtenerPorUsuario);
-router.get('/:id', multaControlador.obtenerPorId);
+router.get('/mis-multas', middlewareRol(['admin', 'bibliotecario', 'docente', 'estudiante']), multaControlador.misMultas);
+router.get('/:id', middlewareRol(['admin', 'bibliotecario']), multaControlador.obtenerPorId);
 router.post('/', middlewareRol(['admin', 'bibliotecario']), validar(crearMultaSchema), multaControlador.crear);
-router.patch('/:id', middlewareRol(['admin']), validar(actualizarMultaSchema), multaControlador.actualizar);
-router.delete('/:id', middlewareRol(['admin']), multaControlador.eliminar);
+router.patch('/:id', middlewareRol(['admin', 'bibliotecario']), validar(actualizarMultaSchema), multaControlador.actualizar);
 
 export default router;

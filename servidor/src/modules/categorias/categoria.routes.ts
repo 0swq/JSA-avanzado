@@ -12,9 +12,8 @@ router.get('/', categoriaControlador.obtenerTodos);
 router.get('/:id', categoriaControlador.obtenerPorId);
 
 router.use(middlewareAutenticacion);
-
 router.post('/', middlewareRol(['admin', 'bibliotecario']), validar(crearCategoriaSchema), categoriaControlador.crear);
 router.patch('/:id', middlewareRol(['admin', 'bibliotecario']), validar(actualizarCategoriaSchema), categoriaControlador.actualizar);
-router.delete('/:id', middlewareRol(['admin']), categoriaControlador.eliminar);
+router.delete('/:id', middlewareRol(['admin', 'bibliotecario']), categoriaControlador.eliminar);
 
 export default router;

@@ -13,9 +13,8 @@ router.get('/libro/:libroId', recursoDigitalControlador.obtenerPorLibro);
 router.get('/:id', recursoDigitalControlador.obtenerPorId);
 
 router.use(middlewareAutenticacion);
-
 router.post('/', middlewareRol(['admin', 'bibliotecario']), validar(crearRecursoDigitalSchema), recursoDigitalControlador.crear);
 router.patch('/:id', middlewareRol(['admin', 'bibliotecario']), validar(actualizarRecursoDigitalSchema), recursoDigitalControlador.actualizar);
-router.delete('/:id', middlewareRol(['admin']), recursoDigitalControlador.eliminar);
+router.delete('/:id', middlewareRol(['admin', 'bibliotecario']), recursoDigitalControlador.eliminar);
 
 export default router;

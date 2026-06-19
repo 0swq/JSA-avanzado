@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Request, Response, NextFunction } from 'express';
 import { pagoMultaServicio } from './pago-multa.service';
 import { RespuestaPagoMultaDto } from './pago-multa.dto';

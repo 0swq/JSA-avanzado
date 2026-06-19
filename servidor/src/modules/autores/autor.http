@@ -29,7 +29,6 @@ Content-Type: application/json
   "nacionalidad": "Colombiana",
   "biografia": "Escritor colombiano..."
 }
-
 ### PATCH actualizar autor
 PATCH {{baseUrl}}/550e8400-e29b-41d4-a716-446655440002
 Authorization: Bearer {{token}}

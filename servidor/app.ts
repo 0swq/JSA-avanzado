@@ -4,9 +4,10 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import cors from 'cors';
 import helmet from 'helmet';
-import swaggerUi from 'swagger-ui-express';
-import swaggerSpec from './src/docs/swagger';
 import { errorMiddleware } from './src/middlewares/error.middleware';
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./src/docs/swagger";
+
 
 const app = express();
 
@@ -14,10 +15,10 @@ app.use(helmet());
 app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/api/auth', require('./src/modules/auth/auth.routes').default);
 app.use('/api/usuarios', require('./src/modules/usuarios/usuario.routes').default);

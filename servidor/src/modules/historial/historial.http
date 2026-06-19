@@ -1,8 +1,6 @@
-### Variables
 @baseUrl = http://localhost:3000/api/historial
 @token = {{login.response.body.data.token}}
 
-### Login
 # @name login
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json

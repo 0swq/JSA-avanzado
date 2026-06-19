@@ -61,4 +61,11 @@ export const usuarioControlador = {
             next(error);
         }
     },
+
+    async perfilPropio(req: Request, res: Response, next: NextFunction) {
+        try {
+            const usuario: RespuestaUsuarioDto = await usuarioServicio.obtenerPorId((req as any).usuario.id);
+            res.json({ success: true, data: usuario });
+        } catch (error) { next(error); }
+    },
 };

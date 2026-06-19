@@ -55,4 +55,11 @@ export const actualizarUsuarioSchema = Joi.object({
     password: Joi.string().min(8).optional().messages({
         'string.min': 'La contraseña debe tener al menos 8 caracteres',
     }),
-}).min(1); // al menos un campo requerido para actualizar
+}).min(1);
+
+export const filtroUsuarioSchema = Joi.object({
+  nombre: Joi.string().optional(),
+  apellidos: Joi.string().optional(),
+  correo: Joi.string().optional(),
+  rolId: Joi.string().uuid().optional(),
+});

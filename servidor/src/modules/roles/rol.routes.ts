@@ -8,11 +8,12 @@ import { crearRolSchema, actualizarRolSchema } from './rol.validator';
 
 const router = Router();
 router.use(middlewareAutenticacion);
+router.use(middlewareRol(['admin']));
 
-router.get('/', middlewareRol(['admin']), rolControlador.obtenerTodos);
-router.get('/:id', middlewareRol(['admin']), rolControlador.obtenerPorId);
-router.post('/', middlewareRol(['admin']), validar(crearRolSchema), rolControlador.crear);
-router.patch('/:id', middlewareRol(['admin']), validar(actualizarRolSchema), rolControlador.actualizar);
-router.delete('/:id', middlewareRol(['admin']), rolControlador.eliminar);
+router.get('/', rolControlador.obtenerTodos);
+router.get('/:id', rolControlador.obtenerPorId);
+router.post('/', validar(crearRolSchema), rolControlador.crear);
+router.patch('/:id', validar(actualizarRolSchema), rolControlador.actualizar);
+router.delete('/:id', rolControlador.eliminar);
 
 export default router;

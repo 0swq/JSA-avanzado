@@ -1,8 +1,6 @@
-### Variables
 @baseUrl = http://localhost:3000/api/auth
 @token = {{login.response.body.data.token}}
 
-### Login
 # @name login
 POST {{baseUrl}}/login
 Content-Type: application/json
@@ -17,7 +15,7 @@ POST {{baseUrl}}/registro
 Content-Type: application/json
 
 {
-  "rolId": "550e8400-e29b-41d4-a716-446655440001",
+  "rolId": "f2367405-cf0c-4b79-bd72-2868a3a75934",
   "nombre": "Nuevo",
   "apellidos": "Usuario",
   "correo": "nuevo@email.com",

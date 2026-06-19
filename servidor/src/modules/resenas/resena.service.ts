@@ -8,27 +8,31 @@ export const resenaServicio = {
     return resenaRepositorio.obtenerPorLibro(libroId);
   },
 
-  obtenerPorUsuario(usuarioId: string): Promise<RespuestaResenaDto[]> {
-    return resenaRepositorio.obtenerPorUsuario(usuarioId);
-  },
-
   async obtenerPorId(id: string): Promise<RespuestaResenaDto> {
     const resena = await resenaRepositorio.obtenerPorId(id);
     if (!resena) throw ApiError.noEncontrado('Reseña no encontrada');
     return resena;
   },
 
+  obtenerPorUsuario(usuarioId: string): Promise<RespuestaResenaDto[]> {
+    return resenaRepositorio.obtenerPorUsuario(usuarioId);
+  },
+
   crear(data: CrearResenaDto): Promise<RespuestaResenaDto> {
     return resenaRepositorio.crear(data);
   },
 
-  async actualizar(id: string, data: ActualizarResenaDto): Promise<RespuestaResenaDto> {
-    await this.obtenerPorId(id);
+  async actualizar(id: string, usuarioId: string, data: ActualizarResenaDto): Promise<RespuestaResenaDto> {
+    const resena = await resenaRepositorio.obtenerPorId(id);
+    if (!resena) throw ApiError.noEncontrado('Reseña no encontrada');
+    if (resena.usuarioId !== usuarioId) {
+      throw ApiError.accesoDenegado('Solo puedes editar tus propias reseñas');
+    }
     return resenaRepositorio.actualizar(id, data);
   },
 
   async eliminar(id: string): Promise<void> {
-    await this.obtenerPorId(id);
+    if (!await resenaRepositorio.obtenerPorId(id)) throw ApiError.noEncontrado('Reseña no encontrada');
     await resenaRepositorio.eliminar(id);
   },
 };

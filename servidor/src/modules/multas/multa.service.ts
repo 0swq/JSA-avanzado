@@ -8,14 +8,14 @@ export const multaServicio = {
     return multaRepositorio.obtenerTodos(filtros);
   },
 
-  obtenerPorUsuario(usuarioId: string): Promise<RespuestaMultaDto[]> {
-    return multaRepositorio.obtenerPorUsuario(usuarioId);
-  },
-
   async obtenerPorId(id: string): Promise<RespuestaMultaDto> {
     const multa = await multaRepositorio.obtenerPorId(id);
     if (!multa) throw ApiError.noEncontrado('Multa no encontrada');
     return multa;
+  },
+
+  obtenerPorUsuario(usuarioId: string): Promise<RespuestaMultaDto[]> {
+    return multaRepositorio.obtenerPorUsuario(usuarioId);
   },
 
   crear(data: CrearMultaDto): Promise<RespuestaMultaDto> {
@@ -23,12 +23,7 @@ export const multaServicio = {
   },
 
   async actualizar(id: string, data: ActualizarMultaDto): Promise<RespuestaMultaDto> {
-    await this.obtenerPorId(id);
+    if (!await multaRepositorio.obtenerPorId(id)) throw ApiError.noEncontrado('Multa no encontrada');
     return multaRepositorio.actualizar(id, data);
-  },
-
-  async eliminar(id: string): Promise<void> {
-    await this.obtenerPorId(id);
-    await multaRepositorio.eliminar(id);
   },
 };

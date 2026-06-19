@@ -8,12 +8,12 @@ import { crearPagoMultaSchema, actualizarPagoMultaSchema } from './pago-multa.va
 
 const router = Router();
 router.use(middlewareAutenticacion);
+router.use(middlewareRol(['admin', 'bibliotecario']));
 
-router.get('/', middlewareRol(['admin', 'bibliotecario']), pagoMultaControlador.obtenerTodos);
+router.get('/', pagoMultaControlador.obtenerTodos);
 router.get('/multa/:multaId', pagoMultaControlador.obtenerPorMulta);
 router.get('/:id', pagoMultaControlador.obtenerPorId);
-router.post('/', middlewareRol(['admin', 'bibliotecario']), validar(crearPagoMultaSchema), pagoMultaControlador.crear);
-router.patch('/:id', middlewareRol(['admin']), validar(actualizarPagoMultaSchema), pagoMultaControlador.actualizar);
-router.delete('/:id', middlewareRol(['admin']), pagoMultaControlador.eliminar);
+router.post('/', validar(crearPagoMultaSchema), pagoMultaControlador.crear);
+router.patch('/:id', validar(actualizarPagoMultaSchema), pagoMultaControlador.actualizar);
 
 export default router;

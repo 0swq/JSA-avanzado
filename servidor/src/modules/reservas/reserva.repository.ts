@@ -8,14 +8,16 @@ export const reservaRepositorio = {
     if (filtros.estado) where.estado = filtros.estado;
     if (filtros.usuarioId) where.usuarioId = filtros.usuarioId;
     if (filtros.libroId) where.libroId = filtros.libroId;
-
     return prisma.reserva.findMany({
       where,
-      include: {
-        usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } },
-        libro: { select: { id: true, titulo: true } },
-      },
+      include: { usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } }, libro: { select: { id: true, titulo: true } } },
       orderBy: { creadoEn: 'desc' },
+    });
+  },
+
+  contarActivasPorUsuario(usuarioId: string) {
+    return prisma.reserva.count({
+      where: { usuarioId, estado: { in: ['pendiente', 'activa'] } },
     });
   },
 
@@ -30,10 +32,7 @@ export const reservaRepositorio = {
   obtenerPorId(id: string) {
     return prisma.reserva.findUnique({
       where: { id },
-      include: {
-        usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } },
-        libro: { select: { id: true, titulo: true } },
-      },
+      include: { usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } }, libro: { select: { id: true, titulo: true } } },
     });
   },
 

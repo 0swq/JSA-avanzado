@@ -1,34 +1,40 @@
-// @ts-nocheck
-import { ApiError } from '@utils/ApiError';
-import { CrearPrestamoDto, ActualizarPrestamoDto, RespuestaPrestamoDto } from './prestamo.dto';
-import { prestamoRepositorio } from './prestamo.repository';
+import {ApiError} from '@utils/ApiError';
+import {CrearPrestamoDto, ActualizarPrestamoDto, RespuestaPrestamoDto} from './prestamo.dto';
+import {prestamoRepositorio} from './prestamo.repository';
 
 export const prestamoServicio = {
-  obtenerTodos(filtros: any = {}): Promise<RespuestaPrestamoDto[]> {
-    return prestamoRepositorio.obtenerTodos(filtros);
-  },
+    obtenerTodos(filtros: any = {}): Promise<RespuestaPrestamoDto[]> {
+        return prestamoRepositorio.obtenerTodos(filtros);
+    },
 
-  obtenerPorUsuario(usuarioId: string): Promise<RespuestaPrestamoDto[]> {
-    return prestamoRepositorio.obtenerPorUsuario(usuarioId);
-  },
+    obtenerPorUsuario(usuarioId: string): Promise<RespuestaPrestamoDto[]> {
+        return prestamoRepositorio.obtenerPorUsuario(usuarioId);
+    },
 
-  async obtenerPorId(id: string): Promise<RespuestaPrestamoDto> {
-    const prestamo = await prestamoRepositorio.obtenerPorId(id);
-    if (!prestamo) throw ApiError.noEncontrado('Préstamo no encontrado');
-    return prestamo;
-  },
+    async obtenerPorId(id: string, usuarioId: string, rol: string): Promise<RespuestaPrestamoDto> {
+        const prestamo = await prestamoRepositorio.obtenerPorId(id);
+        if (!prestamo) throw ApiError.noEncontrado("Préstamo no encontrado");
 
-  crear(data: CrearPrestamoDto): Promise<RespuestaPrestamoDto> {
-    return prestamoRepositorio.crear(data);
-  },
+        if (rol === 'docente' || rol === 'estudiante') {
+            if (prestamo.usuarioId !== usuarioId) {
+                throw ApiError.noAutorizado('No puedes ver préstamos de otros usuarios');
+            }
+        }
 
-  async actualizar(id: string, data: ActualizarPrestamoDto): Promise<RespuestaPrestamoDto> {
-    await this.obtenerPorId(id);
-    return prestamoRepositorio.actualizar(id, data);
-  },
+        return prestamo;
+    },
 
-  async eliminar(id: string): Promise<void> {
-    await this.obtenerPorId(id);
-    await prestamoRepositorio.eliminar(id);
-  },
+    crear(data: CrearPrestamoDto): Promise<RespuestaPrestamoDto> {
+        return prestamoRepositorio.crear(data);
+    },
+
+    async actualizar(id: string, data: ActualizarPrestamoDto): Promise<RespuestaPrestamoDto> {
+        await this.obtenerPorId(id);
+        return prestamoRepositorio.actualizar(id, data);
+    },
+
+    async eliminar(id: string): Promise<void> {
+        await this.obtenerPorId(id);
+        await prestamoRepositorio.eliminar(id);
+    },
 };

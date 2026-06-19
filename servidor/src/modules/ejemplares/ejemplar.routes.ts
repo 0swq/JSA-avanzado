@@ -7,15 +7,14 @@ import { validar } from '@middlewares/validate.middleware';
 import { crearEjemplarSchema, actualizarEjemplarSchema } from './ejemplar.validator';
 
 const router = Router();
+router.use(middlewareAutenticacion);
+router.use(middlewareRol(['admin', 'bibliotecario']));
 
 router.get('/', ejemplarControlador.obtenerTodos);
 router.get('/libro/:libroId', ejemplarControlador.obtenerPorLibro);
 router.get('/:id', ejemplarControlador.obtenerPorId);
-
-router.use(middlewareAutenticacion);
-
-router.post('/', middlewareRol(['admin', 'bibliotecario']), validar(crearEjemplarSchema), ejemplarControlador.crear);
-router.patch('/:id', middlewareRol(['admin', 'bibliotecario']), validar(actualizarEjemplarSchema), ejemplarControlador.actualizar);
-router.delete('/:id', middlewareRol(['admin']), ejemplarControlador.eliminar);
+router.post('/', validar(crearEjemplarSchema), ejemplarControlador.crear);
+router.patch('/:id', validar(actualizarEjemplarSchema), ejemplarControlador.actualizar);
+router.delete('/:id', ejemplarControlador.eliminar);
 
 export default router;

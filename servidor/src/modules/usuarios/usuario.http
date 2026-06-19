@@ -1,7 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:3000/api/usuarios
-@login = variable value
-@token = {{login.response.body.data.token}}
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImEwM2EzNGUxLWZkMDUtNDc5Ny1iODZhLWY3NDEwZTY4ODYyNyIsInJvbElkIjoiYjU5NWNmOWMtMjJhZS00OTdjLWE2NzYtYTEzYjQ4NGY1ZjhlIiwiY29ycmVvIjoiYWRtaW5AYmlibGlvdGVjYS5lZHUiLCJpYXQiOjE3ODE4Nzk4MDAsImV4cCI6MTc4MTkwODYwMH0.kgVeBuxQcKIA3vqBcKFl_iry61iwnSiZoAv7sn-CUzs
 
 ### Login (obtener token)
 # @name login
@@ -13,6 +12,19 @@ Content-Type: application/json
   "password": "12345678"
 }
 
+### POST registrar (sin token)
+POST {{baseUrl}}/registrar
+Content-Type: application/json
+
+{
+  "rolId": "f2367405-cf0c-4b79-bd72-2868a3a75934",
+  "nombre": "Juan",
+  "apellidos": "Pérez",
+  "dni": "12345678",
+  "correo": "juan@email.com",
+  "password": "12345678"
+}
+
 ### GET todos los usuarios
 GET {{baseUrl}}
 Authorization: Bearer {{token}}
@@ -21,13 +33,13 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer {{token}}
 
-### POST crear usuario
+### POST crear usuario (admin)
 POST {{baseUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "rolId": "550e8400-e29b-41d4-a716-446655440001",
+  "rolId": "f2367405-cf0c-4b79-bd72-2868a3a75934",
   "nombre": "Juan",
   "apellidos": "Pérez",
   "dni": "12345678",

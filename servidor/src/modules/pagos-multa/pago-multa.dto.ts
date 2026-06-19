@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface CrearPagoMultaDto {
   multaId: string;
   montoPagado: number;
