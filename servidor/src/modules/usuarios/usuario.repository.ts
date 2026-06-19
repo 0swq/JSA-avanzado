@@ -5,12 +5,14 @@ export const usuarioRepositorio = {
     obtenerTodos() {
         return prisma.usuario.findMany({
             omit: { passwordHash: true },
+            include: { rol: true },
         });
     },
     obtenerPorId(id: string) {
         return prisma.usuario.findUnique({
             where: { id },
             omit: { passwordHash: true },
+            include: { rol: true },
         });
     },
     obtenerPorCorreoConHash(correo: string) {

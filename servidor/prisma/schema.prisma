@@ -102,11 +102,7 @@ model Libro {
   idioma          String?
   publicado       Boolean  @default(true)
   creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
-
-  // busqueda_fts (tsvector generado por la BD a partir de titulo + isbn,
-  // con índice GIN) no se modela en Prisma: se gestiona vía SQL/migración
-  // manual, ya que Prisma no soporta columnas generadas tipo tsvector.
-
+  descripcion     String?  @db.Text
   editorial         Editorial        @relation(fields: [editorialId], references: [id])
   recursosDigitales RecursoDigital[]
   ejemplares        Ejemplar[]
