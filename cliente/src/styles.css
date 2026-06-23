@@ -1,13 +1,5 @@
 @import "tailwindcss";
-
-@layer base {
-  html {
-    line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-    font-family: ui-sans-serif, system-ui, sans-serif;
-  }
-  body {
-    margin: 0;
-  }
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+* {
+  font-family: 'Poppins', sans-serif;
 }

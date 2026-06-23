@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-texto-pequeno',
+  selector: 'texto-pequeno',
   standalone: true,
   imports: [CommonModule],
   template: `<ng-content />`,

@@ -25,7 +25,6 @@ export class PilaVerticalComponent {
     };
     partes.push(itemsMap[this.alinear] ?? 'items-start');
 
-    // justificar -> justify-*
     const justifyMap: Record<string, string> = {
       inicio: 'justify-start',
       centro: 'justify-center',

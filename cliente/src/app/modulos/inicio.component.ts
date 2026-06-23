@@ -1,75 +1,78 @@
-import { Component } from '@angular/core';
-import { HeaderComponent } from '../_shared/componentes/navegacion/header.component';
-import { FooterComponent } from '../_shared/componentes/navegacion/footer.component';
-import { ContenedorComponent } from '../_shared/componentes/diseno/contenedor.component';
-import { PilaVerticalComponent } from '../_shared/componentes/diseno/pila-vertical.component';
-import { TituloComponent } from '../_shared/componentes/texto/titulo.component';
-import { TextoNormalComponent } from '../_shared/componentes/texto/texto-normal.component';
-import { TarjetaComponent } from '../_shared/componentes/datos/tarjeta.component';
-import { BotonComponent } from '../_shared/componentes/botones/boton.component';
-import { BotonContornoComponent } from '../_shared/componentes/botones/boton-contorno.component';
+import{Component}  from'@angular/core';
+import {RouterLink} from '@angular/router';
+import {HeaderComponent} from '../_shared/componentes/navegacion/header.component';
+import {FooterComponent} from '../_shared/componentes/navegacion/footer.component';
+import {StorageService} from '../_services/storage.service';
+import {BotonComponent} from "../_shared/componentes/botones/boton.component";
+import {TextoTituloComponent} from "../_shared/componentes/texto/texto-titulo.component";
+import {TextoNormalComponent} from "../_shared/componentes/texto/texto-normal.component";
+import {TextoPequenoComponent} from "../_shared/componentes/texto/texto-pequeno.component";
+import {PilaHorizontalComponent} from "../_shared/componentes/diseno/pila-horizontal.component";
 
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [
-    HeaderComponent, FooterComponent, ContenedorComponent, PilaVerticalComponent,
-    TituloComponent, TextoNormalComponent, TarjetaComponent, BotonComponent, BotonContornoComponent,
-  ],
+  imports: [HeaderComponent, FooterComponent, RouterLink, BotonComponent,
+    TextoTituloComponent, TextoNormalComponent, TextoPequenoComponent, PilaHorizontalComponent],
   template: `
-    <app-header />
+    <div class="min-h-screen flex flex-col bg-amber-50/30">
+      <app-header/>
 
-    <app-contenedor anchoMaximo="6xl">
-      <app-pila-vertical espacio="8">
+      <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
 
-        <!-- Hero -->
-        <section class="text-center py-12 md:py-20">
-          <app-pila-vertical espacio="4" alinear="centro">
-            <app-titulo nivel="h1" tamanio="5xl" peso="extranegrita">
-              📚 Bienvenido a la Biblioteca JSA
-            </app-titulo>
-            <app-texto-normal tamanio="lg" color="gris">
-              Explora nuestro catálogo, reserva libros y accede a recursos digitales.
-            </app-texto-normal>
-            <div class="flex gap-3 justify-center mt-4">
-              <a routerLink="/catalogo" class="no-underline">
-                <app-boton etiqueta="Ver Catálogo" tamanio="lg"
-                  icono='<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' />
-              </a>
-              <a routerLink="/register" class="no-underline">
-                <app-boton-contorno etiqueta="Registrarse" tamanio="lg"
-                  icono='<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>' />
-              </a>
-            </div>
-          </app-pila-vertical>
-        </section>
 
-        <!-- Tarjetas -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <app-tarjeta titulo="📖 Catálogo" subtitulo="Libros, revistas y más">
-            <app-texto-normal tamanio="sm" color="gris">
-              Explora nuestra colección completa de material bibliográfico disponible para préstamo y consulta.
-            </app-texto-normal>
-          </app-tarjeta>
+        <div class="flex flex-col items-center justify-center py-24 gap-4 text-center">
+          <texto-titulo>Biblioteca Universitaria JSA</texto-titulo>
+          @if (!logueado) {
+            <texto-normal>Inicia sesión para acceder a tus préstamos, reservas y recursos digitales.</texto-normal>
+            <a routerLink="/login" class="no-underline mt-2">
+              <app-boton etiqueta="Iniciar Sesión" tamanio="md"/>
+            </a>
+          } @else {
+            <texto-normal>Bienvenido de nuevo. Explora el catálogo y gestiona tus préstamos y reservas.</texto-normal>
+            <a routerLink="/catalogo" class="no-underline mt-2">
+              <app-boton etiqueta="Ver disponibles" tamanio="md"/>
+            </a>
+          }
 
-          <app-tarjeta titulo="💻 Recursos Digitales" subtitulo="Acceso en línea">
-            <app-texto-normal tamanio="sm" color="gris">
-              Accede a e-books, artículos académicos y bases de datos desde cualquier lugar.
-            </app-texto-normal>
-          </app-tarjeta>
+        </div>
 
-          <app-tarjeta titulo="📅 Reservas" subtitulo="Aparta tu material">
-            <app-texto-normal tamanio="sm" color="gris">
-              Reserva los libros que necesitas y recógelos en la biblioteca sin filas.
-            </app-texto-normal>
-          </app-tarjeta>
-        </section>
 
-      </app-pila-vertical>
-    </app-contenedor>
+        <app-pila-horizontal>
+          <div class="flex-1">
+            <img src="https://ucsp.edu.pe/wp-content/uploads/2023/08/1.-PRESENTACION_BIBLIOTECA-33-scaled.jpg" alt="1">
+          </div>
+          <div class="flex-1 w-full h-full">
+            <texto-normal>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur sed ex leo. Curabitur id
+              tincidunt quam, id lobortis sapien. Sed tellus dolor, fringilla id purus non, vehicula dapibus neque.
+              Integer auctor condimentum turpis, vitae feugiat elit lacinia ut. Ut gravida hendrerit purus, a ornare
+              tellus commodo sed. Maecenas felis nulla, imperdiet et tellus eleifend, auctor dictum mauris. Duis egestas
+              enim vel sem sodales, at dictum mauris facilisis. Pellentesque tempor accumsan laoreet. Praesent risus
+              urna, aliquam commodo lectus ac, pellentesque dictum libero. Sed quis massa in lectus ullamcorper
+              pellentesque ac at nisi.
+            </texto-normal>
+          </div>
+        </app-pila-horizontal>
 
-    <app-footer />
+        <app-pila-horizontal>
+
+        </app-pila-horizontal>
+      </main>
+
+      <app-footer/>
+    </div>
   `,
-  styles: `.no-underline { text-decoration: none; }`,
+  styles: `.no-underline {
+    text-decoration: none;
+  }`,
 })
-export class InicioComponent {}
+export class InicioComponent {
+  constructor(public storage: StorageService) {
+  }
+
+  get logueado(): boolean {
+    return this.storage.isLoggedIn();
+  }
+
+}

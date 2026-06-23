@@ -2,13 +2,13 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-titulo',
+  selector: 'texto-titulo',
   standalone: true,
   imports: [CommonModule],
   template: `<ng-content />`,
   host: { '[class]': 'clases' },
 })
-export class TituloComponent {
+export class TextoTituloComponent {
   @Input() nivel: string = 'h2';
   @Input() tamanio: string = '2xl';
   @Input() peso: string = 'negrita';

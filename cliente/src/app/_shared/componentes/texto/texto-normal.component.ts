@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-texto-normal',
+  selector: 'texto-normal',
   standalone: true,
   imports: [CommonModule],
   template: `<ng-content />`,
