@@ -40,6 +40,7 @@ export class AuthService {
       `${environment.apiUrl}${environment.endpoints.auth.perfil}`,
     );
   }
+
   getUsuarioPorId(id: string): Observable<any> {
     return this.http.get(
       `${environment.apiUrl}/usuarios/nombre/${id}`,

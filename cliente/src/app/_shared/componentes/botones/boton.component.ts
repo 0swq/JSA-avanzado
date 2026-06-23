@@ -45,7 +45,7 @@ export class BotonComponent {
   @Input() anchoCompleto: boolean = false;
   @Input() variante: 'primario' | 'peligro' | 'exito' | 'neutro' = 'primario';
   @Input() tipo: string = 'button';
-  @Input() cuadrado: boolean = false;  // ← sin border-radius
+  @Input() cuadrado: boolean = false;
 
   @Output() presionado = new EventEmitter<void>();
 

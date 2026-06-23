@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+import { createStore } from 'zustand/vanilla';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Injectable } from '@angular/core';
 
 
@@ -34,39 +35,9 @@ export interface NavigationState {
   limpiarSelecciones: () => void;
 }
 
-export const useNavigationStore = create<NavigationState>((set) => ({
-  libroSeleccionadoId: null,
-  prestamoSeleccionadoId: null,
-  multaSeleccionadaId: null,
-  reservaSeleccionadaId: null,
-  usuarioSeleccionadoId: null,
-  autorSeleccionadoId: null,
-  ejemplarSeleccionadoId: null,
-  categoriaSeleccionadaId: null,
-  editorialSeleccionadaId: null,
-  recursoDigitalSeleccionadoId: null,
-  pagoSeleccionadoId: null,
-  rolSeleccionadoId: null,
-  filtroCatalogo: null,
-  filtroPrestamos: null,
-
-  seleccionarLibro: (id) => set({ libroSeleccionadoId: id }),
-  seleccionarPrestamo: (id) => set({ prestamoSeleccionadoId: id }),
-  seleccionarMulta: (id) => set({ multaSeleccionadaId: id }),
-  seleccionarReserva: (id) => set({ reservaSeleccionadaId: id }),
-  seleccionarUsuario: (id) => set({ usuarioSeleccionadoId: id }),
-  seleccionarAutor: (id) => set({ autorSeleccionadoId: id }),
-  seleccionarEjemplar: (id) => set({ ejemplarSeleccionadoId: id }),
-  seleccionarCategoria: (id) => set({ categoriaSeleccionadaId: id }),
-  seleccionarEditorial: (id) => set({ editorialSeleccionadaId: id }),
-  seleccionarRecursoDigital: (id) => set({ recursoDigitalSeleccionadoId: id }),
-  seleccionarPago: (id) => set({ pagoSeleccionadoId: id }),
-  seleccionarRol: (id) => set({ rolSeleccionadoId: id }),
-  setFiltroCatalogo: (filtro) => set({ filtroCatalogo: filtro }),
-  setFiltroPrestamos: (filtro) => set({ filtroPrestamos: filtro }),
-
-  limpiarSelecciones: () =>
-    set({
+export const navigationStore = createStore<NavigationState>()(
+  persist(
+    (set) => ({
       libroSeleccionadoId: null,
       prestamoSeleccionadoId: null,
       multaSeleccionadaId: null,
@@ -79,10 +50,64 @@ export const useNavigationStore = create<NavigationState>((set) => ({
       recursoDigitalSeleccionadoId: null,
       pagoSeleccionadoId: null,
       rolSeleccionadoId: null,
+      filtroCatalogo: null,
+      filtroPrestamos: null,
+
+      seleccionarLibro: (id) => set({ libroSeleccionadoId: id }),
+      seleccionarPrestamo: (id) => set({ prestamoSeleccionadoId: id }),
+      seleccionarMulta: (id) => set({ multaSeleccionadaId: id }),
+      seleccionarReserva: (id) => set({ reservaSeleccionadaId: id }),
+      seleccionarUsuario: (id) => set({ usuarioSeleccionadoId: id }),
+      seleccionarAutor: (id) => set({ autorSeleccionadoId: id }),
+      seleccionarEjemplar: (id) => set({ ejemplarSeleccionadoId: id }),
+      seleccionarCategoria: (id) => set({ categoriaSeleccionadaId: id }),
+      seleccionarEditorial: (id) => set({ editorialSeleccionadaId: id }),
+      seleccionarRecursoDigital: (id) => set({ recursoDigitalSeleccionadoId: id }),
+      seleccionarPago: (id) => set({ pagoSeleccionadoId: id }),
+      seleccionarRol: (id) => set({ rolSeleccionadoId: id }),
+      setFiltroCatalogo: (filtro) => set({ filtroCatalogo: filtro }),
+      setFiltroPrestamos: (filtro) => set({ filtroPrestamos: filtro }),
+
+      limpiarSelecciones: () =>
+        set({
+          libroSeleccionadoId: null,
+          prestamoSeleccionadoId: null,
+          multaSeleccionadaId: null,
+          reservaSeleccionadaId: null,
+          usuarioSeleccionadoId: null,
+          autorSeleccionadoId: null,
+          ejemplarSeleccionadoId: null,
+          categoriaSeleccionadaId: null,
+          editorialSeleccionadaId: null,
+          recursoDigitalSeleccionadoId: null,
+          pagoSeleccionadoId: null,
+          rolSeleccionadoId: null,
+        }),
     }),
-}));
+    {
+      name: 'navigation-store',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        libroSeleccionadoId: state.libroSeleccionadoId,
+        prestamoSeleccionadoId: state.prestamoSeleccionadoId,
+        multaSeleccionadaId: state.multaSeleccionadaId,
+        reservaSeleccionadaId: state.reservaSeleccionadaId,
+        usuarioSeleccionadoId: state.usuarioSeleccionadoId,
+        autorSeleccionadoId: state.autorSeleccionadoId,
+        ejemplarSeleccionadoId: state.ejemplarSeleccionadoId,
+        categoriaSeleccionadaId: state.categoriaSeleccionadaId,
+        editorialSeleccionadaId: state.editorialSeleccionadaId,
+        recursoDigitalSeleccionadoId: state.recursoDigitalSeleccionadoId,
+        pagoSeleccionadoId: state.pagoSeleccionadoId,
+        rolSeleccionadoId: state.rolSeleccionadoId,
+        filtroCatalogo: state.filtroCatalogo,
+        filtroPrestamos: state.filtroPrestamos,
+      }),
+    }
+  )
+);
 
 @Injectable({ providedIn: 'root' })
 export class NavigationService {
-  readonly store = useNavigationStore;
+  readonly store = navigationStore;
 }

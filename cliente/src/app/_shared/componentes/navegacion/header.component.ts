@@ -3,6 +3,9 @@ import {RouterModule} from '@angular/router';
 import {StorageService} from '../../../_services/storage.service';
 import {BotonContornoComponent} from '../botones/boton-contorno.component';
 import {AvatarComponent} from '../datos/avatar.component';
+import {AuthService} from "../../../_services/auth.service";
+
+const USER_KEY = 'auth-user';
 
 @Component({
   selector: 'app-header',
@@ -36,6 +39,11 @@ import {AvatarComponent} from '../datos/avatar.component';
           }
           @if (logueado) {
             <div class="flex items-center gap-3">
+              @if (storage.esAdmin||storage.esDocente) {
+                <a routerLink="/admin/libros" class="no-underline">
+                  <app-boton-contorno etiqueta="Configuración" tamanio="sm"/>
+                </a>
+              }
               <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-xl">
                 <app-avatar [nombre]="storage.getNombre()" tamanio="sm"/>
                 <div class="flex flex-col leading-tight">
@@ -91,6 +99,11 @@ import {AvatarComponent} from '../datos/avatar.component';
             }
             @if (logueado) {
               <div class="flex flex-col gap-3 pt-1">
+                @if (storage.esAdmin||storage.esDocente) {
+                  <a routerLink="/admin/libros" (click)="menuAbierto = false" class="no-underline block">
+                    <app-boton-contorno etiqueta="Gestión" tamanio="sm"/>
+                  </a>
+                }
                 <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-xl">
                   <app-avatar [nombre]="storage.getNombre()" tamanio="sm"/>
                   <div class="flex flex-col leading-tight">
@@ -123,8 +136,8 @@ export class HeaderComponent implements OnInit {
   enlaces = [
     {etiqueta: 'Inicio', ruta: '/inicio'},
     {etiqueta: 'Catálogo', ruta: '/catalogo'},
-    {etiqueta: 'Mis Préstamos', ruta: '/prestamos'},
-    {etiqueta: 'Reservas', ruta: '/reservas'},
+    {etiqueta: 'Mis Préstamos', ruta: '/mis-prestamos'},
+    {etiqueta: 'Reservas', ruta: '/mis-reservas'},
   ];
 
   constructor(public storage: StorageService) {
@@ -144,4 +157,5 @@ export class HeaderComponent implements OnInit {
     this.storage.clean();
     window.location.reload();
   }
+
 }

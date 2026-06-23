@@ -16,10 +16,8 @@ export class PilaHorizontalComponent {
   get clases(): string {
     const partes: string[] = [];
 
-    // gap
     partes.push(`gap-${this.espacio}`);
 
-    // alinear -> items-*
     const itemsMap: Record<string, string> = {
       inicio: 'items-start',
       centro: 'items-center',
@@ -28,7 +26,6 @@ export class PilaHorizontalComponent {
     };
     partes.push(itemsMap[this.alinear] ?? 'items-start');
 
-    // justificar -> justify-*
     const justifyMap: Record<string, string> = {
       inicio: 'justify-start',
       centro: 'justify-center',
@@ -39,7 +36,6 @@ export class PilaHorizontalComponent {
     };
     partes.push(justifyMap[this.justificar] ?? 'justify-start');
 
-    // envolver -> flex-wrap / flex-wrap-reverse / flex-nowrap
     const wrapMap: Record<string, string> = {
       no: 'flex-nowrap',
       si: 'flex-wrap',

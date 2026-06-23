@@ -7,25 +7,27 @@ import {LoginComponent} from './modulos/auth/login.component';
 import {RegisterComponent} from './modulos/auth/register.component';
 import {CatalogoListadoComponent} from './modulos/libros-publico/catalogo-listado.component';
 import {LibroDetalleComponent} from './modulos/libros-publico/libro-detalle.component';
-// ── Usuario ──────────────────────────────────────
 import {ProfileComponent} from './modulos/usuario/perfil.component';
+import {RealizarReservaComponent} from './modulos/usuario/realizar-reserva';
+import {RealizarPrestamoComponent} from './modulos/usuario/realizar-prestamo';
 import {MisPrestamosComponent} from './modulos/usuario/mis-prestamos.component';
 import {MisMultasComponent} from './modulos/usuario/mis-multas.component';
 import {MisReservasComponent} from './modulos/usuario/mis-reservas.component';
 import {MisFavoritosComponent} from './modulos/usuario/mis-favoritos.component';
 import {MisResenasComponent} from './modulos/usuario/mis-resenas.component';
-
-// ── Admin — dashboard + solo admin ───────────────
 import {DashboardComponent} from './modulos/admin/dashboard.component';
 import {AdminUsuariosComponent} from './modulos/admin/usuarios.component';
 import {AdminRolesComponent} from './modulos/admin/roles.component';
 import {ConfiguracionMultaComponent} from './modulos/admin/configuracion-multa.component';
-
-// ── Admin + bibliotecario ────────────────────────
 import {AdminLibrosComponent} from './modulos/admin/libros.component';
+import {CrearLibroComponent} from './modulos/admin/crear-libro.component';
+import {EditarLibroComponent} from "./modulos/admin/editar-libro.component";
+
 import {AdminEjemplaresComponent} from './modulos/admin/ejemplares.component';
 import {AdminPrestamosComponent} from './modulos/admin/prestamos.component';
+import {DevolverLibroComponent} from './modulos/admin/devolver-libro.component';
 import {AdminMultasComponent} from './modulos/admin/multas.component';
+import {DetalleMultaComponent} from './modulos/admin/detalle-multa.component';
 import {AdminPagosComponent} from './modulos/admin/pagos.component';
 import {AdminReservasComponent} from './modulos/admin/reservas.component';
 import {AdminAutoresComponent} from './modulos/admin/autores.component';
@@ -42,6 +44,8 @@ const routes: Routes = [
   {path: 'catalogo/:id', component: LibroDetalleComponent},
 
   {path: 'profile', component: ProfileComponent, canActivate: [AuthGuard]},
+  {path: 'realizar-reserva', component: RealizarReservaComponent, canActivate: [AuthGuard]},
+  {path: 'realizar-prestamo', component: RealizarPrestamoComponent, canActivate: [AuthGuard]},
   {path: 'mis-prestamos', component: MisPrestamosComponent, canActivate: [AuthGuard]},
   {path: 'mis-multas', component: MisMultasComponent, canActivate: [AuthGuard]},
   {path: 'mis-reservas', component: MisReservasComponent, canActivate: [AuthGuard]},
@@ -49,9 +53,13 @@ const routes: Routes = [
   {path: 'mis-resenas', component: MisResenasComponent, canActivate: [AuthGuard]},
 
   {path: 'admin/libros', component: AdminLibrosComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
+  {path: 'admin/libros/crear', component: CrearLibroComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
+  {path: 'admin/libros/editar', component: EditarLibroComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/ejemplares', component: AdminEjemplaresComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/prestamos', component: AdminPrestamosComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
+  {path: 'admin/prestamos/devolver', component: DevolverLibroComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/multas', component: AdminMultasComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
+  {path: 'admin/multas/detalle', component: DetalleMultaComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/pagos', component: AdminPagosComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/reservas', component: AdminReservasComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/autores', component: AdminAutoresComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
