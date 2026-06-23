@@ -68,4 +68,13 @@ export const usuarioControlador = {
             res.json({ success: true, data: usuario });
         } catch (error) { next(error); }
     },
+
+    /** Devuelve { id, nombre, apellidos, correo } del usuario — público para autenticados */
+    async obtenerNombrePorId(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.params.id as string;
+            const usuario = await usuarioServicio.obtenerPorId(id);
+            res.json({ success: true, data: { id: usuario.id, nombre: usuario.nombre, apellidos: usuario.apellidos, correo: usuario.correo } });
+        } catch (error) { next(error); }
+    },
 };

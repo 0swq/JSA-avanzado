@@ -13,7 +13,6 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({adapter});
 
 async function main() {
-    console.log('Creando roles...');
 
     const adminRol = await prisma.rol.upsert({
         where: {nombre: 'admin'},
@@ -39,7 +38,6 @@ async function main() {
         create: {nombre: 'estudiante', descripcion: 'Estudiante'},
     });
 
-    console.log('Roles creados: admin, bibliotecario, docente, estudiante');
 
     const hash = await bcrypt.hash('12345678', 10);
 

@@ -2,9 +2,8 @@
 import Joi from 'joi';
 
 export const crearUsuarioSchema = Joi.object({
-    rolId: Joi.string().uuid().required().messages({
+    rolId: Joi.string().uuid().optional().messages({
         'string.uuid': 'El rolId debe ser un UUID válido',
-        'any.required': 'El rolId es obligatorio',
     }),
 
     nombre: Joi.string().max(100).optional().messages({

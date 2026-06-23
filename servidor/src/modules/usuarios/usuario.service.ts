@@ -21,9 +21,18 @@ export const usuarioServicio = {
     },
 
     async crear(data: CrearUsuarioDto) {
-        const {password, ...resto} = data;
+        const {password, rolId, ...resto} = data;
+
+        // Si no se envía rolId, se asigna el rol "estudiante" por defecto
+        let idRolFinal = rolId;
+        if (!idRolFinal) {
+            const rolEstudiante = await usuarioRepositorio.obtenerRolPorNombre('estudiante');
+            idRolFinal = rolEstudiante?.id;
+            if (!idRolFinal) throw new ApiError(500, 'No se encontró el rol "estudiante" en la BD');
+        }
+
         const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-        return usuarioRepositorio.crear({...resto, passwordHash});
+        return usuarioRepositorio.crear({...resto, passwordHash, rolId: idRolFinal});
     },
 
     async actualizar(id: string, data: ActualizarUsuarioDto) {

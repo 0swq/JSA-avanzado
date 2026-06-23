@@ -1,10 +1,3 @@
-// ============================================================
-// Schema de Prisma - Sistema de Biblioteca
-// Generado a partir del diagrama DBML proporcionado
-// Todos los IDs son UUID (String) excepto usuario.id, que se
-// mantiene como varchar(128) porque corresponde a un ID externo
-// (ej. proveedor de autenticación: Firebase/Auth0/Clerk, etc.)
-// ============================================================
 
 generator client {
   provider = "prisma-client-js"
@@ -14,13 +7,10 @@ datasource db {
   provider = "postgresql"
 }
 
-// ------------------------------------------------------------
-// Roles y usuarios
-// ------------------------------------------------------------
 
 model Rol {
   id          String   @id @default(uuid()) @db.Uuid
-  nombre      String   @unique @db.VarChar(50) // admin | bibliotecario | estudiante | docente
+  nombre      String   @unique @db.VarChar(50)
   descripcion String?
   creadoEn    DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
@@ -48,10 +38,6 @@ model Usuario {
 
   @@map("usuario")
 }
-
-// ------------------------------------------------------------
-// Catálogo: autores, categorías, editoriales, libros
-// ------------------------------------------------------------
 
 model Autor {
   id              String    @id @default(uuid()) @db.Uuid
@@ -118,12 +104,12 @@ model Libro {
 model RecursoDigital {
   id              String   @id @default(uuid()) @db.Uuid
   libroId         String   @map("libro_id") @db.Uuid
-  tipo            String   @db.VarChar(30) // pdf | epub | audiolibro | video
+  tipo            String   @db.VarChar(30)
   url             String
-  formato         String?  @db.VarChar(20) // pdf | epub | mp3 | mp4
+  formato         String?  @db.VarChar(20)
   tamanioMb       Decimal? @map("tamanio_mb")
-  duracionMinutos Int?     @map("duracion_minutos") // solo para audiolibro
-  tipoAcceso      String?  @map("tipo_acceso") @db.VarChar(30) // publico | autenticado | restringido
+  duracionMinutos Int?     @map("duracion_minutos")
+  tipoAcceso      String?  @map("tipo_acceso") @db.VarChar(30)
   creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   libro Libro @relation(fields: [libroId], references: [id])
@@ -135,8 +121,8 @@ model Ejemplar {
   id               String    @id @default(uuid()) @db.Uuid
   libroId          String    @map("libro_id") @db.Uuid
   codigoBarras     String    @unique @map("codigo_barras") @db.VarChar(50)
-  estado           String    @default("disponible") @db.VarChar(30) // disponible | prestado | perdido | mantenimiento
-  ubicacion        String? // Ej: Estante A-12
+  estado           String    @default("disponible") @db.VarChar(30)
+  ubicacion        String?
   fechaAdquisicion DateTime? @map("fecha_adquisicion") @db.Date
   creadoEn         DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
 
@@ -145,10 +131,6 @@ model Ejemplar {
 
   @@map("ejemplar")
 }
-
-// ------------------------------------------------------------
-// Tablas de unión (muchos a muchos)
-// ------------------------------------------------------------
 
 model LibroAutor {
   libroId String @map("libro_id") @db.Uuid
@@ -172,17 +154,13 @@ model LibroCategoria {
   @@map("libro_categoria")
 }
 
-// ------------------------------------------------------------
-// Préstamos, multas y reservas
-// ------------------------------------------------------------
-
 model Prestamo {
   id                 String    @id @default(uuid()) @db.Uuid
   usuarioId          String    @map("usuario_id") @db.VarChar(128)
   ejemplarId         String    @map("ejemplar_id") @db.Uuid
-  fechaMaxDevolucion DateTime  @map("fecha_max_devolucion") @db.Timestamptz(6) // Si se supera, se genera multa automática
-  fechaDevolucion    DateTime? @map("fecha_devolucion") @db.Timestamptz(6) // NULL = aún no devuelto
-  estado             String    @default("activo") @db.VarChar(20) // activo | devuelto | vencido
+  fechaMaxDevolucion DateTime  @map("fecha_max_devolucion") @db.Timestamptz(6)
+  fechaDevolucion    DateTime? @map("fecha_devolucion") @db.Timestamptz(6)
+  estado             String    @default("activo") @db.VarChar(20)
   creadoEn           DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   usuario  Usuario  @relation(fields: [usuarioId], references: [id])
@@ -195,9 +173,9 @@ model Prestamo {
 model Multa {
   id         String   @id @default(uuid()) @db.Uuid
   prestamoId String   @unique @map("prestamo_id") @db.Uuid
-  monto      Decimal  @db.Decimal(10, 2) // Calculado: dias_mora × tarifa_diaria
+  monto      Decimal  @db.Decimal(10, 2)
   diasMora   Int      @map("dias_mora")
-  estado     String   @default("pendiente") @db.VarChar(20) // pendiente | pagada | condonada
+  estado     String   @default("pendiente") @db.VarChar(20)
   creadoEn   DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   prestamo Prestamo    @relation(fields: [prestamoId], references: [id])
@@ -210,7 +188,7 @@ model PagoMulta {
   id          String   @id @default(uuid()) @db.Uuid
   multaId     String   @map("multa_id") @db.Uuid
   montoPagado Decimal  @map("monto_pagado") @db.Decimal(10, 2)
-  metodoPago  String   @map("metodo_pago") @db.VarChar(50) // efectivo | transferencia | tarjeta
+  metodoPago  String   @map("metodo_pago") @db.VarChar(50)
   creadoEn    DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   multa Multa @relation(fields: [multaId], references: [id])
@@ -222,8 +200,8 @@ model Reserva {
   id              String   @id @default(uuid()) @db.Uuid
   usuarioId       String   @map("usuario_id") @db.VarChar(128)
   libroId         String   @map("libro_id") @db.Uuid
-  fechaExpiracion DateTime @map("fecha_expiracion") @db.Timestamptz(6) // Si no se retira antes de esta fecha, la reserva se cancela
-  estado          String   @default("pendiente") @db.VarChar(20) // pendiente | activa | cancelada | completada
+  fechaExpiracion DateTime @map("fecha_expiracion") @db.Timestamptz(6)
+  estado          String   @default("pendiente") @db.VarChar(20)
   creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   usuario Usuario @relation(fields: [usuarioId], references: [id])
@@ -241,15 +219,11 @@ model ConfiguracionMulta {
   @@map("configuracion_multa")
 }
 
-// ------------------------------------------------------------
-// Reseñas, historial y favoritos
-// ------------------------------------------------------------
-
 model Resena {
   id         String   @id @default(uuid()) @db.Uuid
   usuarioId  String   @map("usuario_id") @db.VarChar(128)
   libroId    String   @map("libro_id") @db.Uuid
-  puntuacion Int? // 1-5
+  puntuacion Int?
   comentario String?
   creadoEn   DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
@@ -261,7 +235,7 @@ model Resena {
 
 model Historial {
   id           String   @id @default(uuid()) @db.Uuid
-  nombreAccion String   @map("nombre_accion") @db.VarChar(100) // Ej: PRESTAMO_CREADO, MULTA_GENERADA, LIBRO_DEVUELTO
+  nombreAccion String   @map("nombre_accion") @db.VarChar(100)
   accion       String
   hechoPorId   String   @map("hecho_por") @db.VarChar(128)
   modulo       String?  @db.VarChar(50)

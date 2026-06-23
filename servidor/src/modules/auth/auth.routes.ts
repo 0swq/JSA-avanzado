@@ -24,7 +24,6 @@ router.post('/registro', validar(crearUsuarioSchema), async (req, res, next) => 
         next(error);
     }
 });
-
 router.get('/perfil', middlewareAutenticacion, async (req, res, next) => {
     try {
         const usuario = await usuarioServicio.obtenerPorId((req as any).usuario.id);

@@ -17,7 +17,13 @@ export const usuarioRepositorio = {
         });
     },
     obtenerPorCorreoConHash(correo: string) {
-        return prisma.usuario.findUnique({ where: { correo } });
+        return prisma.usuario.findUnique({
+            where: { correo },
+            include: { rol: true },
+        });
+    },
+    obtenerRolPorNombre(nombre: string) {
+        return prisma.rol.findUnique({ where: { nombre } });
     },
     crear(data: Omit<CrearUsuarioDto, 'password'> & { passwordHash?: string }) {
         return prisma.usuario.create({ data });
