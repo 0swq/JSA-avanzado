@@ -3,12 +3,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Historial (auditoría).
- * Prefijo: /api/historial
- * Solo tiene listar, obtener y crear — no se actualiza ni se elimina.
- * Acceso: admin, bibliotecario
- */
 @Injectable({ providedIn: 'root' })
 export class HistorialService {
   private base = `${environment.apiUrl}${environment.endpoints.historial.listar}`;

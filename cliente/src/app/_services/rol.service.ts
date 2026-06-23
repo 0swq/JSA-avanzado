@@ -3,11 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Roles.
- * Prefijo: /api/roles
- * Acceso: admin (todos los métodos)
- */
 @Injectable({ providedIn: 'root' })
 export class RolService {
   private base = `${environment.apiUrl}${environment.endpoints.roles.listar}`;

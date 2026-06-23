@@ -3,13 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Reseñas.
- * Prefijo: /api/resenas
- * Puntuación: 1 a 5
- * Todos pueden ver, crear y editar sus propias reseñas.
- * Admin/bibliotecario pueden eliminar cualquier reseña.
- */
+
 @Injectable({ providedIn: 'root' })
 export class ResenaService {
   private base = `${environment.apiUrl}${environment.endpoints.resenas.listar}`;

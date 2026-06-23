@@ -3,11 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Autores.
- * Prefijo: /api/autores
- * Lectura: público | Escritura: admin, bibliotecario
- */
 @Injectable({ providedIn: 'root' })
 export class AutorService {
   private base = `${environment.apiUrl}${environment.endpoints.autores.listar}`;

@@ -52,7 +52,6 @@ import {StorageService} from '../../../_services/storage.service';
             <a routerLink="/admin/autores" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Autores</a>
             <a routerLink="/admin/categorias" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Categorías</a>
             <a routerLink="/admin/editoriales" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Editoriales</a>
-            <a routerLink="/admin/recursos-digitales" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Recursos digitales</a>
           </div>
         </div>
 

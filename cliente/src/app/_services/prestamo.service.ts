@@ -3,13 +3,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Préstamos.
- * Prefijo: /api/prestamos
- * Estados: activo, devuelto, vencido
- * Acceso admin/bibliotecario: CRUD completo
- * Acceso docente/estudiante: solo misPrestamos()
- */
 @Injectable({ providedIn: 'root' })
 export class PrestamoService {
   private base = `${environment.apiUrl}${environment.endpoints.prestamos.listar}`;

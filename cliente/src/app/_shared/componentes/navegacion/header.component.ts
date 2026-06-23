@@ -135,7 +135,7 @@ export class HeaderComponent implements OnInit {
 
   enlaces = [
     {etiqueta: 'Inicio', ruta: '/inicio'},
-    {etiqueta: 'Catálogo', ruta: '/catalogo'},
+    {etiqueta: 'Libros', ruta: '/catalogo'},
     {etiqueta: 'Mis Préstamos', ruta: '/mis-prestamos'},
     {etiqueta: 'Reservas', ruta: '/mis-reservas'},
   ];

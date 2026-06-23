@@ -3,12 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Categorías.
- * Prefijo: /api/categorias
- * Soporta jerarquía padre/hijas (campo padreId).
- * Lectura: público | Escritura: admin, bibliotecario
- */
 @Injectable({ providedIn: 'root' })
 export class CategoriaService {
   private base = `${environment.apiUrl}${environment.endpoints.categorias.listar}`;

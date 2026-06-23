@@ -22,10 +22,9 @@ import {Prestamo} from '../../model';
   standalone: true,
   imports: [
     SidebarComponent, PilaVerticalComponent, PilaHorizontalComponent,
-    BotonComponent, BotonIconoComponent, TextoNormalComponent,
-    TextoPequenoComponent, TextTituloComponent, EntradaBusquedaComponent,
+    BotonIconoComponent, TextoPequenoComponent, TextTituloComponent, EntradaBusquedaComponent,
     SelectorComponent, InsigniaComponent, PaginacionComponent,
-    FormsModule, RouterModule, DatePipe,
+    FormsModule, RouterModule, DatePipe, BotonComponent,
   ],
   template: `
     <div class="flex min-h-screen bg-stone-50">
@@ -62,12 +61,20 @@ import {Prestamo} from '../../model';
 
           <div class="bg-white rounded-xl border border-stone-200 p-3 sm:p-4 mb-6">
             <app-pila-horizontal espacio="4" alinear="fin" envolver="si">
+              <div class="relative flex-1 min-w-[200px]">
+                <app-entrada-busqueda
+                  class="block pointer-events-none opacity-60 select-none"
+                  placeholder="Codigo de barras"
+                  [valor]="terminoBusqueda"
+                  (valorCambio)="onBusquedaCambio($event)"/>
+              </div>
+              <app-boton etiqueta="Devolver libro"/><div class="relative flex-1 min-w-[200px]">
               <app-entrada-busqueda
-                class="flex-1 min-w-[200px]"
-                placeholder="Buscar por usuario o libro..."
+                class="block pointer-events-none opacity-60 select-none"
+                placeholder="Codigo de barras"
                 [valor]="terminoBusqueda"
                 (valorCambio)="onBusquedaCambio($event)"/>
-
+            </div>
               <app-selector
                 etiqueta="Estado"
                 id="filtro-estado"
@@ -82,15 +89,36 @@ import {Prestamo} from '../../model';
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
-                  <tr class="border-b border-stone-200 bg-stone-50">
-                    <th class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">ID</th>
-                    <th class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">Usuario</th>
-                    <th class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">Libro</th>
-                    <th class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">Préstamo</th>
-                    <th class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">Máx. Devolución</th>
-                    <th class="text-center px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">Estado</th>
-                    <th class="text-center px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">Acciones</th>
-                  </tr>
+                <tr class="border-b border-stone-200 bg-stone-50">
+                  <th
+                    class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    ID
+                  </th>
+                  <th
+                    class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    Usuario
+                  </th>
+                  <th
+                    class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    Libro
+                  </th>
+                  <th
+                    class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    Préstamo
+                  </th>
+                  <th
+                    class="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    Máx. Devolución
+                  </th>
+                  <th
+                    class="text-center px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    Estado
+                  </th>
+                  <th
+                    class="text-center px-3 sm:px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wider whitespace-nowrap">
+                    Acciones
+                  </th>
+                </tr>
                 </thead>
                 <tbody class="divide-y divide-stone-100">
                   @for (prestamo of prestamosPaginados; track prestamo.id) {
@@ -134,11 +162,7 @@ import {Prestamo} from '../../model';
                               tooltip="Devolver libro"
                               (presionado)="devolverLibro(prestamo)"/>
                           }
-                          <app-boton-icono
-                            icono="👁"
-                            tamanio="sm"
-                            tooltip="Ver detalle"
-                            (presionado)="verDetalle(prestamo)"/>
+
                         </app-pila-horizontal>
                       </td>
                     </tr>
@@ -175,7 +199,7 @@ export class AdminPrestamosComponent {
   terminoBusqueda: string = '';
   filtroEstado: string = '';
 
-  opcionesEstado: Array<{etiqueta: string; valor: string}> = [
+  opcionesEstado: Array<{ etiqueta: string; valor: string }> = [
     {etiqueta: 'Activo', valor: 'activo'},
     {etiqueta: 'Vencido', valor: 'vencido'},
     {etiqueta: 'Devuelto', valor: 'devuelto'},
@@ -224,9 +248,17 @@ export class AdminPrestamosComponent {
     return r;
   }
 
-  get activos(): number { return this.prestamos.filter(p => p.estado === 'activo').length; }
-  get vencidos(): number { return this.prestamos.filter(p => p.estado === 'vencido').length; }
-  get devueltos(): number { return this.prestamos.filter(p => p.estado === 'devuelto').length; }
+  get activos(): number {
+    return this.prestamos.filter(p => p.estado === 'activo').length;
+  }
+
+  get vencidos(): number {
+    return this.prestamos.filter(p => p.estado === 'vencido').length;
+  }
+
+  get devueltos(): number {
+    return this.prestamos.filter(p => p.estado === 'devuelto').length;
+  }
 
   devolverLibro(prestamo: Prestamo): void {
     this.navigationService.store.getState().seleccionarPrestamo(prestamo.id);
@@ -249,11 +281,47 @@ export class AdminPrestamosComponent {
   }
 
   prestamos: Prestamo[] = [
-    {id: 'p-001', usuarioId: 'u-001', ejemplarId: 'e-101', fechaMaxDevolucion: '2026-06-05T00:00:00Z', estado: 'vencido', creadoEn: '2026-05-28T00:00:00Z'},
-    {id: 'p-002', usuarioId: 'u-002', ejemplarId: 'e-301', fechaMaxDevolucion: '2026-06-28T00:00:00Z', estado: 'activo', creadoEn: '2026-06-20T00:00:00Z'},
-    {id: 'p-003', usuarioId: 'u-003', ejemplarId: 'e-103', fechaMaxDevolucion: '2026-05-17T00:00:00Z', fechaDevolucion: '2026-05-20T00:00:00Z', estado: 'devuelto', creadoEn: '2026-05-10T00:00:00Z'},
-    {id: 'p-004', usuarioId: 'u-001', ejemplarId: 'e-501', fechaMaxDevolucion: '2026-06-30T00:00:00Z', estado: 'activo', creadoEn: '2026-06-22T00:00:00Z'},
-    {id: 'p-005', usuarioId: 'u-002', ejemplarId: 'e-401', fechaMaxDevolucion: '2026-06-10T00:00:00Z', estado: 'vencido', creadoEn: '2026-06-01T00:00:00Z'},
+    {
+      id: 'p-001',
+      usuarioId: 'u-001',
+      ejemplarId: 'e-101',
+      fechaMaxDevolucion: '2026-06-05T00:00:00Z',
+      estado: 'vencido',
+      creadoEn: '2026-05-28T00:00:00Z'
+    },
+    {
+      id: 'p-002',
+      usuarioId: 'u-002',
+      ejemplarId: 'e-301',
+      fechaMaxDevolucion: '2026-06-28T00:00:00Z',
+      estado: 'activo',
+      creadoEn: '2026-06-20T00:00:00Z'
+    },
+    {
+      id: 'p-003',
+      usuarioId: 'u-003',
+      ejemplarId: 'e-103',
+      fechaMaxDevolucion: '2026-05-17T00:00:00Z',
+      fechaDevolucion: '2026-05-20T00:00:00Z',
+      estado: 'devuelto',
+      creadoEn: '2026-05-10T00:00:00Z'
+    },
+    {
+      id: 'p-004',
+      usuarioId: 'u-001',
+      ejemplarId: 'e-501',
+      fechaMaxDevolucion: '2026-06-30T00:00:00Z',
+      estado: 'activo',
+      creadoEn: '2026-06-22T00:00:00Z'
+    },
+    {
+      id: 'p-005',
+      usuarioId: 'u-002',
+      ejemplarId: 'e-401',
+      fechaMaxDevolucion: '2026-06-10T00:00:00Z',
+      estado: 'vencido',
+      creadoEn: '2026-06-01T00:00:00Z'
+    },
   ];
 
   usuariosHardcoded = [
@@ -274,6 +342,10 @@ export class AdminPrestamosComponent {
     {id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111', titulo: 'Cien Años de Soledad', autores: ['Gabriel García Márquez']},
     {id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333', titulo: 'Don Quijote de la Mancha', autores: ['Miguel de Cervantes']},
     {id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444', titulo: 'Breve Historia del Tiempo', autores: ['Stephen Hawking']},
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555', titulo: 'Introducción a los Algoritmos', autores: ['Cormen', 'Leiserson']},
+    {
+      id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
+      titulo: 'Introducción a los Algoritmos',
+      autores: ['Cormen', 'Leiserson']
+    },
   ];
 }

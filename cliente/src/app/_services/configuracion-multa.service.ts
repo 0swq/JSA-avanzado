@@ -3,19 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Configuración de Multa.
- * Prefijo: /api/configuracion-multa
- * Define tarifa diaria y días máximos de préstamo.
- * Lectura: admin, bibliotecario | Escritura: solo admin
- */
+
 @Injectable({ providedIn: 'root' })
 export class ConfiguracionMultaService {
   private base = `${environment.apiUrl}${environment.endpoints.configuracionMulta.listar}`;
 
   constructor(private http: HttpClient) {}
 
-  /** Obtener la configuración actual */
   listar(): Observable<any> {
     return this.http.get(this.base);
   }

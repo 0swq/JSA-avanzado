@@ -3,11 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Editoriales.
- * Prefijo: /api/editoriales
- * Lectura: público | Escritura: admin, bibliotecario
- */
 @Injectable({ providedIn: 'root' })
 export class EditorialService {
   private base = `${environment.apiUrl}${environment.endpoints.editoriales.listar}`;

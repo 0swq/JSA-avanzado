@@ -3,13 +3,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Multas.
- * Prefijo: /api/multas
- * Estados: pendiente, pagada, condonada
- * Acceso admin/bibliotecario: CRUD completo
- * Acceso docente/estudiante: solo misMultas()
- */
 @Injectable({ providedIn: 'root' })
 export class MultaService {
   private base = `${environment.apiUrl}${environment.endpoints.multas.listar}`;

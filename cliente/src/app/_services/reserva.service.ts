@@ -3,14 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-/**
- * Servicio para el módulo Reservas.
- * Prefijo: /api/reservas
- * Estados: pendiente, activa, cancelada, completada
- * Límite: 3 reservas activas por usuario
- * Acceso admin/bibliotecario: CRUD completo
- * Acceso docente/estudiante: misReservas() + crear() (con límite)
- */
+
 @Injectable({ providedIn: 'root' })
 export class ReservaService {
   private base = `${environment.apiUrl}${environment.endpoints.reservas.listar}`;

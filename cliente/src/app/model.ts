@@ -39,19 +39,18 @@ export interface Editorial {
   creadoEn: string;
 }
 export interface Libro {
-  id: string; // uuid
+  id: string;
   titulo: string;
   isbn?: string;
-  editorialId: string; // uuid -> editorial.id
+  editorialId: string;
   anioPublicacion?: number;
   idioma?: string;
   descripcion?: string;
-  busquedaFts?: string; // tsvector generado por Postgres, normalmente no se usa en frontend
+  busquedaFts?: string;
   publicado: boolean;
   creadoEn: string;
 }
 
-// ─── recurso_digital ──────────────────────────────────────────────────────
 export interface RecursoDigital {
   id: string; // uuid
   libroId: string; // uuid -> libro.id
@@ -64,7 +63,6 @@ export interface RecursoDigital {
   creadoEn: string;
 }
 
-// ─── ejemplar ───────────────────────────────────────────────────────────
 export interface Ejemplar {
   id: string; // uuid
   libroId: string; // uuid -> libro.id
@@ -75,19 +73,16 @@ export interface Ejemplar {
   creadoEn: string;
 }
 
-// ─── libro_autor (tabla puente) ───────────────────────────────────────────
 export interface LibroAutor {
   libroId: string; // uuid -> libro.id
   autorId: string; // uuid -> autor.id
 }
 
-// ─── libro_categoria (tabla puente) ───────────────────────────────────────
 export interface LibroCategoria {
   libroId: string; // uuid -> libro.id
   categoriaId: string; // uuid -> categoria.id
 }
 
-// ─── prestamo ───────────────────────────────────────────────────────────
 export interface Prestamo {
   id: string; // uuid
   usuarioId: string; // -> usuario.id
@@ -97,8 +92,6 @@ export interface Prestamo {
   estado: 'activo' | 'devuelto' | 'vencido';
   creadoEn: string;
 }
-
-// ─── multa ──────────────────────────────────────────────────────────────
 export interface Multa {
   id: string; // uuid
   prestamoId: string; // uuid -> prestamo.id (unique)
@@ -108,7 +101,6 @@ export interface Multa {
   creadoEn: string;
 }
 
-// ─── pago_multa ─────────────────────────────────────────────────────────
 export interface PagoMulta {
   id: string; // uuid
   multaId: string; // uuid -> multa.id
@@ -117,7 +109,6 @@ export interface PagoMulta {
   creadoEn: string;
 }
 
-// ─── reserva ────────────────────────────────────────────────────────────
 export interface Reserva {
   id: string; // uuid
   usuarioId: string; // -> usuario.id
@@ -127,7 +118,6 @@ export interface Reserva {
   creadoEn: string;
 }
 
-// ─── configuracion_multa ───────────────────────────────────────────────
 export interface ConfiguracionMulta {
   id: string; // uuid
   tarifaDiaria: number; // numeric(10,2)
@@ -135,7 +125,6 @@ export interface ConfiguracionMulta {
   creadoEn: string;
 }
 
-// ─── resena ─────────────────────────────────────────────────────────────
 export interface Resena {
   id: string; // uuid
   usuarioId: string; // -> usuario.id
@@ -144,19 +133,15 @@ export interface Resena {
   comentario?: string;
   creadoEn: string;
 }
-
-// ─── historial ──────────────────────────────────────────────────────────
 export interface Historial {
   id: string; // uuid
-  nombreAccion: string; // ej: PRESTAMO_CREADO, MULTA_GENERADA, LIBRO_DEVUELTO
+  nombreAccion: string;
   accion: string;
   hechoPor: string; // -> usuario.id
   modulo?: string;
   ipUsuario?: string;
   creadoEn: string;
 }
-
-// ─── favorito ───────────────────────────────────────────────────────────
 export interface Favorito {
   id: string; // uuid
   usuarioId: string; // -> usuario.id
