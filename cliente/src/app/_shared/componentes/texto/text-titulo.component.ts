@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   template: `<ng-content />`,
   host: { '[class]': 'clases' },
 })
-export class TextoTituloComponent {
+export class TextTituloComponent {
   @Input() nivel: string = 'h2';
   @Input() tamanio: string = '2xl';
   @Input() peso: string = 'negrita';

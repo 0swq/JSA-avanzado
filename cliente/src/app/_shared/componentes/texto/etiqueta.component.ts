@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
     @if (requerido) { <span class="text-red-500 ml-0.5">*</span> }
   </label>`,
 })
-export class TextoEtiquetaComponent {
+export class EtiquetaComponent {
   @Input() para: string = '';
   @Input() requerido: boolean = false;
 }
