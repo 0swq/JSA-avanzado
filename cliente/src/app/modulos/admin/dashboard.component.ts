@@ -146,13 +146,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private contadorCargas = 0;
   private readonly totalCargas = 4;
 
-  // ── Helpers ──
   private normalizarLista(data: any): any[] {
     if (Array.isArray(data)) return data;
     return data?.data ?? data?.resultados ?? data?.items ?? [];
   }
-
-  // ── Init ──
   ngOnInit(): void {
     this.cargarLibros();
     this.cargarPrestamos();
@@ -161,15 +158,12 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // los gráficos se crean cuando todas las cargas terminan → en verificarCargasCompletas()
   }
 
   ngOnDestroy(): void {
     this.chartPrestamos?.destroy();
     this.chartEjemplares?.destroy();
   }
-
-  // ── Carga de datos ──
 
   private cargarLibros(): void {
     this.libroService.listar().subscribe({
@@ -426,7 +420,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ── Stats ──
 
   private actualizarStat(
     etiqueta: string,

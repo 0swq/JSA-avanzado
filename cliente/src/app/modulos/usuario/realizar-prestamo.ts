@@ -234,7 +234,6 @@ export class RealizarPrestamoComponent implements OnInit {
 
     console.log('[RealizarPrestamo] ID obtenido:', id);
 
-    // Obtener el rol del usuario para la validación de fecha
     this.rolUsuario = this.storageService.getRol()?.toLowerCase() ?? '';
 
     if (id) {
@@ -361,7 +360,6 @@ export class RealizarPrestamoComponent implements OnInit {
       return;
     }
 
-    // Validar fecha máxima según rol
     const fechaSel = new Date(this.fechaDevolucion);
     const fechaMax = new Date(this.fechaMaxima);
     if (fechaSel > fechaMax) {
@@ -370,13 +368,11 @@ export class RealizarPrestamoComponent implements OnInit {
       return;
     }
 
-    // Guardar el id antes de la llamada async para evitar problemas con el getter
     const ejemplarId = this.ejemplarSeleccionado.id;
 
     this.confirmando = true;
     this.error = '';
 
-    // Verificar límite de préstamos + reservas activas antes de crear
     const limite = this.rolUsuario === 'estudiante' ? 3 : 7;
     forkJoin({
       prestamosActivos: this.prestamoService.contarActivos(),
@@ -399,8 +395,6 @@ export class RealizarPrestamoComponent implements OnInit {
           next: (res: any) => {
             const creado = res?.data ?? res;
             this.navigationService.store.getState().seleccionarPrestamo(creado.id);
-
-            // Actualizar localmente el ejemplar: nueva referencia del array para que Angular detecte el cambio
             this.libro._ejemplares = this.libro._ejemplares.map((e: any) =>
               e.id === ejemplarId ? { ...e, estado: 'prestado' } : e
             );

@@ -237,7 +237,6 @@ export class RealizarReservaComponent implements OnInit {
 
     console.log('[RealizarReserva] ID obtenido:', id);
 
-    // Obtener el rol del usuario para la validación de fecha
     this.rolUsuario = this.storageService.getRol()?.toLowerCase() ?? '';
 
     if (id) {

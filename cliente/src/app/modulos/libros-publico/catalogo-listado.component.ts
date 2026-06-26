@@ -249,7 +249,6 @@ export class CatalogoListadoComponent implements OnInit {
     this.erroresImagen.add(id);
   }
 
-  // --- Búsqueda vía API ---
   terminoBusqueda: string = '';
 
   onTerminoCambio(valor: string): void {

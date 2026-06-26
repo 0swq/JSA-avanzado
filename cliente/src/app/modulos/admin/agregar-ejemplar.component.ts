@@ -256,21 +256,17 @@ export class AgregarEjemplarComponent implements OnInit {
   private readonly ejemplarService = inject(EjemplarService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  // Libro contexto
   libroId: string = '';
   libro: any = null;
   editorialNombre: string = '';
   nombresAutores: string = '';
 
-  // Form
   codigoBarras: string = '';
   estado: string = 'disponible';
   ubicacion: string = '';
 
-  // Ejemplares existentes
   ejemplares: any[] = [];
 
-  // UI
   cargando: boolean = true;
   exito: boolean = false;
   ultimoCodigoBarras: string = '';
@@ -330,7 +326,6 @@ export class AgregarEjemplarComponent implements OnInit {
         const data = res?.data ?? res;
         this.libro = data;
 
-        // Extraer nombres de autores
         if (Array.isArray(data.autores)) {
           this.nombresAutores = data.autores
             .map((a: any) => a.autor
@@ -339,7 +334,6 @@ export class AgregarEjemplarComponent implements OnInit {
             .join(', ');
         }
 
-        // Cargar editorial
         const editorialId = data.editorialId ?? data.editorial?.id ?? '';
         if (editorialId) {
           this.cargarEditorial(editorialId);
@@ -364,7 +358,6 @@ export class AgregarEjemplarComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
-        // Si no se puede cargar, intentamos extraer del libro
         if (this.libro?.editorial?.nombre) {
           this.editorialNombre = this.libro.editorial.nombre;
         }
@@ -414,14 +407,11 @@ export class AgregarEjemplarComponent implements OnInit {
         this.ultimoCodigoBarras = this.codigoBarras.trim();
         this.exito = true;
         this.error = '';
-        // Limpiar form para el siguiente
         this.codigoBarras = '';
         this.ubicacion = '';
         this.estado = 'disponible';
-        // Recargar lista
         this.cargarEjemplares();
         this.cdr.detectChanges();
-        // Ocultar éxito después de unos segundos
         setTimeout(() => {
           this.exito = false;
           this.cdr.detectChanges();

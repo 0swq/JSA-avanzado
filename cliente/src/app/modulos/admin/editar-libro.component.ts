@@ -371,7 +371,6 @@ export class EditarLibroComponent implements OnInit {
 
   opcionesEditoriales: Array<{ etiqueta: string; valor: string }> = [];
 
-  // ── Multi-select helpers ──────────────────────────────────────────
   agregarAutor(id: string): void {
     if (id && !this.autoresSeleccionados.includes(id)) this.autoresSeleccionados.push(id);
     this.autorSeleccionando = '';
@@ -424,7 +423,6 @@ export class EditarLibroComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Obtener ID de la ruta primero, luego del navigation store como fallback
     const id = this.route.snapshot.paramMap.get('id')
       ?? this.navigationService.store.getState().libroSeleccionadoId;
 
@@ -500,7 +498,6 @@ export class EditarLibroComponent implements OnInit {
         this.titulo = libro.titulo || '';
         this.isbn = libro.isbn || '';
 
-        // Extraer IDs de autores desde la respuesta anidada: { autores: [{ autor: { id } }] }
         if (Array.isArray(libro.autorIds)) {
           this.autoresSeleccionados = libro.autorIds;
         } else if (Array.isArray(libro.autores)) {
@@ -511,15 +508,12 @@ export class EditarLibroComponent implements OnInit {
           this.autoresSeleccionados = [];
         }
 
-        // Editorial: puede venir como string (UUID) o como objeto { id, nombre }
         this.editorial = (typeof libro.editorialId === 'string' ? libro.editorialId : '')
           || (libro.editorial?.id ?? '');
 
         this.anioPublicacion = libro.anioPublicacion ?? 2026;
         this.idioma = libro.idioma || '';
         this.descripcion = libro.descripcion || '';
-
-        // Extraer IDs de categorías desde la respuesta anidada: { categorias: [{ categoria: { id } }] }
         if (Array.isArray(libro.categoriaIds)) {
           this.categoriasSeleccionadas = libro.categoriaIds;
         } else if (Array.isArray(libro.categorias)) {

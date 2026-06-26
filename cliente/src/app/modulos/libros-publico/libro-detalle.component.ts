@@ -244,7 +244,6 @@ export class LibroDetalleComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Primero la ruta (catalogo/:id), fallback al navigation store
     const id = this.route.snapshot.paramMap.get('id')
       ?? this.navigationService.store.getState().libroSeleccionadoId;
     if (id) {
@@ -275,9 +274,7 @@ export class LibroDetalleComponent implements OnInit {
     this.favoritoService.misFavoritos().subscribe({
       next: (data: any) => {
         const favoritos = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
-        // Sincronizar store
         this.favoritoStoreService.store.getState().setFavoritosIds(favoritos.map((f: any) => f.libroId));
-        // Estado local para este libro
         const encontrado = favoritos.find((f: any) => f.libroId === libroId);
         if (encontrado) {
           this.esFavorito = true;

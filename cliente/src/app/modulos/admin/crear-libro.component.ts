@@ -302,7 +302,6 @@ export class CrearLibroComponent implements OnInit {
   foto: string = '';
   errorImagen: boolean = false;
 
-  // Multi-select arrays
   autoresDisponibles: Array<{etiqueta: string; valor: string}> = [];
   autoresSeleccionados: string[] = [];
   autorSeleccionando: string = '';
@@ -356,7 +355,6 @@ export class CrearLibroComponent implements OnInit {
     );
   }
 
-  // ── Multi-select helpers ──────────────────────────────────────────
   agregarAutor(id: string): void {
     if (id && !this.autoresSeleccionados.includes(id)) {
       this.autoresSeleccionados.push(id);
@@ -399,7 +397,6 @@ export class CrearLibroComponent implements OnInit {
     this.recursosDigitales.splice(idx, 1);
   }
 
-  // ── Init ──────────────────────────────────────────────────────────
   normalizarLista(data: any): any[] {
     if (Array.isArray(data)) return data;
     return data?.data ?? data?.resultados ?? data?.items ?? [];
@@ -447,7 +444,6 @@ export class CrearLibroComponent implements OnInit {
     });
   }
 
-  // ── Submit ────────────────────────────────────────────────────────
   crearLibro(): void {
     this.errores.titulo = '';
     this.errores.autores = '';

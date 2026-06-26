@@ -134,7 +134,6 @@ export class ConfiguracionMultaComponent implements OnInit, OnDestroy {
   private exitoTimeout: ReturnType<typeof setTimeout> | null = null;
   private cargaTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Guardar los valores originales como numbers para comparar de forma segura
   private tarifaOriginal: number = 2.50;
   private diasOriginal: number = 7;
 
@@ -175,7 +174,6 @@ export class ConfiguracionMultaComponent implements OnInit, OnDestroy {
           this.configActual = config;
           this.tarifaDiaria = Number(config.tarifaDiaria);
           this.diasMaxPrestamo = Number(config.diasMaxPrestamo);
-          // Guardar originales como numbers
           this.tarifaOriginal = this.tarifaDiaria;
           this.diasOriginal = this.diasMaxPrestamo;
         }

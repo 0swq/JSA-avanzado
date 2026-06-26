@@ -295,7 +295,6 @@ export class MisReservasComponent implements OnInit {
     this.cancelando.set(reserva.id);
     this.reservaService.cancelar(reserva.id).subscribe({
       next: () => {
-        // Actualizar el estado localmente sin recargar
         this.reservas.update(lista =>
           lista.map(r => r.id === reserva.id ? { ...r, estado: 'cancelada' } : r)
         );
