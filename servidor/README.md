@@ -119,6 +119,24 @@ Usar el token recibido como `Authorization: Bearer <token>` en las demás rutas.
 Route → Joi Validate → Controller → Service → Repository → Prisma → PostgreSQL
 ```
 
+## Cliente Angular
+
+El frontend está en la carpeta `../cliente`. Requiere Angular CLI 17+.
+
+```bash
+cd ../cliente
+
+# Instalar dependencias
+npm install
+
+# Arrancar servidor de desarrollo
+ng serve
+```
+
+La app corre en `http://localhost:4200` y se comunica con el backend en `http://localhost:3000`.
+
+Configurar la URL del backend en `cliente/src/environments/environment.ts` si es necesario.
+
 ## Scripts
 
 ```bash
