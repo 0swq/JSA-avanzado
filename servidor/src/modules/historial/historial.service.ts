@@ -8,6 +8,8 @@ export const historialServicio = {
     hechoPorId?: string;
     modulo?: string;
     nombreAccion?: string;
+    accion?: string;
+    buscar?: string;
     desde?: Date;
     hasta?: Date;
   } = {}): Promise<RespuestaHistorialDto[]> {

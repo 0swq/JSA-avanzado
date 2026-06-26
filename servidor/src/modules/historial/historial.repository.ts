@@ -7,6 +7,8 @@ export const historialRepositorio = {
     hechoPorId?: string;
     modulo?: string;
     nombreAccion?: string;
+    accion?: string;
+    buscar?: string;
     desde?: Date;
     hasta?: Date;
   } = {}) {
@@ -15,6 +17,19 @@ export const historialRepositorio = {
     if (filtros.hechoPorId) where.hechoPorId = filtros.hechoPorId;
     if (filtros.modulo) where.modulo = filtros.modulo;
     if (filtros.nombreAccion) where.nombreAccion = filtros.nombreAccion;
+    if (filtros.accion) where.accion = filtros.accion;
+    if (filtros.buscar) {
+      where.OR = [
+        { nombreAccion: { contains: filtros.buscar, mode: 'insensitive' } },
+        { accion: { contains: filtros.buscar, mode: 'insensitive' } },
+        { modulo: { contains: filtros.buscar, mode: 'insensitive' } },
+        { hechoPor: { OR: [
+          { nombre: { contains: filtros.buscar, mode: 'insensitive' } },
+          { apellidos: { contains: filtros.buscar, mode: 'insensitive' } },
+          { correo: { contains: filtros.buscar, mode: 'insensitive' } },
+        ]}},
+      ];
+    }
     if (filtros.desde || filtros.hasta) {
       where.creadoEn = {};
       if (filtros.desde) where.creadoEn.gte = filtros.desde;

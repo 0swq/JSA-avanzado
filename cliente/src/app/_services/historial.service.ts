@@ -13,6 +13,8 @@ export class HistorialService {
     hechoPorId?: string;
     modulo?: string;
     nombreAccion?: string;
+    accion?: string;
+    buscar?: string;
     desde?: string;
     hasta?: string;
   }): Observable<any> {
@@ -31,7 +33,7 @@ export class HistorialService {
     return this.http.get(`${this.base}/${id}`);
   }
 
-  crear(data: { nombreAccion: string; accion: string; modulo: string; hechoPorId: string; ipUsuario?: string }): Observable<any> {
+  crear(data: { nombreAccion: string; accion: string; modulo: string; hechoPorId: string }): Observable<any> {
     return this.http.post(this.base, data);
   }
 }

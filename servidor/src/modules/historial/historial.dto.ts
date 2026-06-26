@@ -4,7 +4,6 @@ export interface CrearHistorialDto {
   accion: string;
   hechoPorId: string;
   modulo?: string;
-  ipUsuario?: string;
 }
 
 export interface RespuestaHistorialDto {
@@ -13,6 +12,5 @@ export interface RespuestaHistorialDto {
   accion: string;
   hechoPorId: string;
   modulo: string | null;
-  ipUsuario: string | null;
   creadoEn: Date;
 }

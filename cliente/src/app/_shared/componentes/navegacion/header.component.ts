@@ -137,7 +137,7 @@ export class HeaderComponent implements OnInit {
     {etiqueta: 'Inicio', ruta: '/inicio'},
     {etiqueta: 'Libros', ruta: '/catalogo'},
     {etiqueta: 'Mis Préstamos', ruta: '/mis-prestamos'},
-    {etiqueta: 'Reservas', ruta: '/mis-reservas'},
+    {etiqueta: 'Mis Reservas', ruta: '/mis-reservas'},
   ];
 
   constructor(public storage: StorageService) {

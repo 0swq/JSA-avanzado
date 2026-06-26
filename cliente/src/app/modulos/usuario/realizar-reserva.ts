@@ -2,6 +2,7 @@ import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {DatePipe} from '@angular/common';
 import {Router, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
+import {forkJoin} from 'rxjs';
 import {HeaderComponent} from '../../_shared/componentes/navegacion/header.component';
 import {FooterComponent} from '../../_shared/componentes/navegacion/footer.component';
 import {TarjetaComponent} from '../../_shared/componentes/datos/tarjeta.component';
@@ -15,6 +16,7 @@ import {SelectorComponent} from '../../_shared/componentes/entradas/selector.com
 import {EstadoVacioComponent} from '../../_shared/componentes/retroalimentacion/estado-vacio.component';
 import {NavigationService} from '../../_services/navigation-store';
 import {LibroService} from '../../_services/libro.service';
+import {PrestamoService} from '../../_services/prestamo.service';
 import {ReservaService} from '../../_services/reserva.service';
 import {StorageService} from '../../_services/storage.service';
 import {Ejemplar} from '../../model';
@@ -109,14 +111,17 @@ import {Ejemplar} from '../../model';
                     />
 
                     <!-- Aviso de límite según rol -->
-                    <div class="flex items-start gap-2 p-3 rounded-lg bg-amber-100 border border-amber-300 text-sm text-amber-800">
-                      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div
+                      class="flex items-start gap-2 p-3 rounded-lg bg-amber-100 border border-amber-300 text-sm text-amber-800">
+                      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="16" x2="12" y2="12"/>
                         <line x1="12" y1="8" x2="12.01" y2="8"/>
                       </svg>
                       <span>
-                        Como <strong>{{ rolUsuario || 'usuario' }}</strong>, puedes reservar por hasta <strong>{{ rolUsuario === 'estudiante' ? 4 : 14 }} días</strong>.
+                        Como <strong>{{ rolUsuario || 'usuario' }}</strong>, puedes reservar por hasta <strong>{{ rolUsuario === 'estudiante' ? 4 : 14 }}
+                        días</strong>.
                       </span>
                     </div>
 
@@ -211,6 +216,7 @@ export class RealizarReservaComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly navigationService = inject(NavigationService);
   private readonly libroService = inject(LibroService);
+  private readonly prestamoService = inject(PrestamoService);
   private readonly reservaService = inject(ReservaService);
   private readonly storageService = inject(StorageService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -291,6 +297,7 @@ export class RealizarReservaComponent implements OnInit {
       valor: e.id,
     }));
   }
+
   get ejemplarSeleccionado(): Ejemplar | undefined {
     return this.ejemplaresDisponibles.find(e => e.id === this.ejemplarSeleccionadoId);
   }
@@ -324,7 +331,6 @@ export class RealizarReservaComponent implements OnInit {
 
   onFechaCambio(valor: string): void {
     this.fechaExpiracion = valor;
-    // Validación en tiempo real: si la fecha supera el máximo, mostrar error
     if (valor) {
       const fechaSel = new Date(valor);
       const fechaMax = new Date(this.fechaMaxima);
@@ -348,7 +354,6 @@ export class RealizarReservaComponent implements OnInit {
       return;
     }
 
-    // Validar fecha máxima según rol
     const fechaSel = new Date(this.fechaExpiracion);
     const fechaMax = new Date(this.fechaMaxima);
     if (fechaSel > fechaMax) {
@@ -357,24 +362,48 @@ export class RealizarReservaComponent implements OnInit {
       return;
     }
 
+    const ejemplarId = this.ejemplarSeleccionado.id;
+
     this.confirmando = true;
     this.error = '';
 
-    this.reservaService.crear({
-      libroId: this.libro.id,
-      ejemplarId: this.ejemplarSeleccionado.id,
-      fechaExpiracion: new Date(this.fechaExpiracion).toISOString(),
+    const limite = this.rolUsuario === 'estudiante' ? 3 : 7;
+    forkJoin({
+      prestamosActivos: this.prestamoService.contarActivos(),
+      reservasActivas: this.reservaService.contarActivas(),
     }).subscribe({
-      next: (res: any) => {
-        const creada = res?.data ?? res;
-        this.navigationService.store.getState().seleccionarReserva(creada.id);
-        this.exito = true;
-        this.confirmando = false;
-        this.cdr.detectChanges();
+      next: ({prestamosActivos, reservasActivas}) => {
+        const total = prestamosActivos + reservasActivas;
+        if (total >= limite) {
+          this.error = `Has alcanzado el límite de ${limite} préstamos y reservas activas (tienes ${total}). No puedes realizar más reservas.`;
+          this.confirmando = false;
+          this.cdr.detectChanges();
+          return;
+        }
+
+        this.reservaService.crear({
+          libroId: this.libro.id,
+          ejemplarId: ejemplarId,
+          fechaExpiracion: new Date(this.fechaExpiracion).toISOString(),
+        }).subscribe({
+          next: (res: any) => {
+            const creada = res?.data ?? res;
+            this.navigationService.store.getState().seleccionarReserva(creada.id);
+            this.exito = true;
+            this.confirmando = false;
+            this.cdr.detectChanges();
+          },
+          error: (err: any) => {
+            console.error('Error al crear reserva:', err.message);
+            this.error = err?.error?.mensaje ?? 'Error al registrar la reserva. Intenta de nuevo.';
+            this.confirmando = false;
+            this.cdr.detectChanges();
+          },
+        });
       },
       error: (err: any) => {
-        console.error('Error al crear reserva:', err.message);
-        this.error = err?.error?.mensaje ?? 'Error al registrar la reserva. Intenta de nuevo.';
+        console.error('Error al verificar límites:', err);
+        this.error = 'No se pudo verificar el límite de reservas. Intenta de nuevo.';
         this.confirmando = false;
         this.cdr.detectChanges();
       },

@@ -43,6 +43,7 @@ import {CrearEditorialComponent} from './modulos/admin/crear-editorial.component
 import {EditarEditorialComponent} from './modulos/admin/editar-editorial.component';
 import {AdminRecursosDigitalesComponent} from './modulos/admin/recursos-digitales.component';
 import {AdminHistorialComponent} from './modulos/admin/historial.component';
+import {AgregarEjemplarComponent} from './modulos/admin/agregar-ejemplar.component';
 
 const routes: Routes = [
   {path: 'inicio', component: InicioComponent},
@@ -66,6 +67,7 @@ const routes: Routes = [
   {path: 'admin/libros', component: AdminLibrosComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/libros/crear', component: CrearLibroComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/libros/editar/:id', component: EditarLibroComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
+  {path: 'admin/libros/:id/agregar-ejemplar', component: AgregarEjemplarComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/ejemplares', component: AdminEjemplaresComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/prestamos', component: AdminPrestamosComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},
   {path: 'admin/prestamos/devolver', component: DevolverLibroComponent, canActivate: [AuthGuard, RoleGuard], data: {roles: ['admin', 'bibliotecario']}},

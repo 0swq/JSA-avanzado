@@ -1,14 +1,20 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { HistorialService } from './historial.service';
+import { StorageService } from './storage.service';
 
 
 @Injectable({ providedIn: 'root' })
 export class LibroService {
   private base = `${environment.apiUrl}${environment.endpoints.libros.listar}`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private historialService: HistorialService,
+    private storageService: StorageService,
+  ) {}
 
   listar(filtros?: {
     titulo?: string;
@@ -46,15 +52,42 @@ export class LibroService {
     autorIds?: string[];
     categoriaIds?: string[];
   }): Observable<any> {
-    return this.http.post(this.base, data);
+    return this.http.post(this.base, data).pipe(
+      tap(() => {
+        this.historialService.crear({
+          nombreAccion: 'Crear libro',
+          accion: 'crear',
+          modulo: 'libros',
+          hechoPorId: this.storageService.getId(),
+        }).subscribe();
+      }),
+    );
   }
 
   actualizar(id: string, data: any): Observable<any> {
-    return this.http.patch(`${this.base}/${id}`, data);
+    return this.http.patch(`${this.base}/${id}`, data).pipe(
+      tap(() => {
+        this.historialService.crear({
+          nombreAccion: 'Actualizar libro',
+          accion: 'actualizar',
+          modulo: 'libros',
+          hechoPorId: this.storageService.getId(),
+        }).subscribe();
+      }),
+    );
   }
 
   eliminar(id: string): Observable<any> {
-    return this.http.delete(`${this.base}/${id}`);
+    return this.http.delete(`${this.base}/${id}`).pipe(
+      tap(() => {
+        this.historialService.crear({
+          nombreAccion: 'Eliminar libro',
+          accion: 'eliminar',
+          modulo: 'libros',
+          hechoPorId: this.storageService.getId(),
+        }).subscribe();
+      }),
+    );
   }
 
   buscar(termino: string, pagina?: number, porPagina?: number): Observable<any> {

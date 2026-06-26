@@ -16,14 +16,14 @@ export const crearHistorialSchema = Joi.object({
   }),
 
   modulo: Joi.string().max(50).optional(),
-
-  ipUsuario: Joi.string().max(50).optional(),
 });
 
 export const filtroHistorialSchema = Joi.object({
   hechoPorId: Joi.string().optional(),
   modulo: Joi.string().max(50).optional(),
   nombreAccion: Joi.string().max(100).optional(),
+  accion: Joi.string().optional(),
+  buscar: Joi.string().max(200).optional(),
   desde: Joi.date().iso().optional(),
   hasta: Joi.date().iso().optional(),
 });

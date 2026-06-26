@@ -2,6 +2,7 @@ import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {DatePipe} from '@angular/common';
 import {Router, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
+import {forkJoin} from 'rxjs';
 import {HeaderComponent} from '../../_shared/componentes/navegacion/header.component';
 import {FooterComponent} from '../../_shared/componentes/navegacion/footer.component';
 import {TarjetaComponent} from '../../_shared/componentes/datos/tarjeta.component';
@@ -16,6 +17,7 @@ import {EstadoVacioComponent} from '../../_shared/componentes/retroalimentacion/
 import {NavigationService} from '../../_services/navigation-store';
 import {LibroService} from '../../_services/libro.service';
 import {PrestamoService} from '../../_services/prestamo.service';
+import {ReservaService} from '../../_services/reserva.service';
 import {StorageService} from '../../_services/storage.service';
 import {Ejemplar} from '../../model';
 
@@ -212,6 +214,7 @@ export class RealizarPrestamoComponent implements OnInit {
   private readonly navigationService = inject(NavigationService);
   private readonly libroService = inject(LibroService);
   private readonly prestamoService = inject(PrestamoService);
+  private readonly reservaService = inject(ReservaService);
   private readonly storageService = inject(StorageService);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -373,29 +376,52 @@ export class RealizarPrestamoComponent implements OnInit {
     this.confirmando = true;
     this.error = '';
 
-    this.prestamoService.crear({
-      usuarioId: this.storageService.getId(),
-      ejemplarId: ejemplarId,
-      fechaMaxDevolucion: new Date(this.fechaDevolucion).toISOString(),
+    // Verificar límite de préstamos + reservas activas antes de crear
+    const limite = this.rolUsuario === 'estudiante' ? 3 : 7;
+    forkJoin({
+      prestamosActivos: this.prestamoService.contarActivos(),
+      reservasActivas: this.reservaService.contarActivas(),
     }).subscribe({
-      next: (res: any) => {
-        const creado = res?.data ?? res;
-        this.navigationService.store.getState().seleccionarPrestamo(creado.id);
+      next: ({ prestamosActivos, reservasActivas }) => {
+        const total = prestamosActivos + reservasActivas;
+        if (total >= limite) {
+          this.error = `Has alcanzado el límite de ${limite} préstamos y reservas activas (tienes ${total}). No puedes solicitar más préstamos.`;
+          this.confirmando = false;
+          this.cdr.detectChanges();
+          return;
+        }
 
-        // Actualizar localmente el ejemplar: nueva referencia del array para que Angular detecte el cambio
-        this.libro._ejemplares = this.libro._ejemplares.map((e: any) =>
-          e.id === ejemplarId ? { ...e, estado: 'prestado' } : e
-        );
-        this.libro.ejemplaresDisponibles = this.libro._ejemplares.filter((e: any) => e.estado === 'disponible').length;
-        console.log('[RealizarPrestamo] Ejemplares disponibles actualizados:', this.libro.ejemplaresDisponibles);
+        this.prestamoService.crear({
+          usuarioId: this.storageService.getId(),
+          ejemplarId: ejemplarId,
+          fechaMaxDevolucion: new Date(this.fechaDevolucion).toISOString(),
+        }).subscribe({
+          next: (res: any) => {
+            const creado = res?.data ?? res;
+            this.navigationService.store.getState().seleccionarPrestamo(creado.id);
 
-        this.exito = true;
-        this.confirmando = false;
-        this.cdr.detectChanges();
+            // Actualizar localmente el ejemplar: nueva referencia del array para que Angular detecte el cambio
+            this.libro._ejemplares = this.libro._ejemplares.map((e: any) =>
+              e.id === ejemplarId ? { ...e, estado: 'prestado' } : e
+            );
+            this.libro.ejemplaresDisponibles = this.libro._ejemplares.filter((e: any) => e.estado === 'disponible').length;
+            console.log('[RealizarPrestamo] Ejemplares disponibles actualizados:', this.libro.ejemplaresDisponibles);
+
+            this.exito = true;
+            this.confirmando = false;
+            this.cdr.detectChanges();
+          },
+          error: (err: any) => {
+            console.error('Error al crear préstamo:', err.message);
+            this.error = err?.error?.mensaje ?? 'Error al registrar el préstamo. Intenta de nuevo.';
+            this.confirmando = false;
+            this.cdr.detectChanges();
+          },
+        });
       },
       error: (err: any) => {
-        console.error('Error al crear préstamo:', err.message);
-        this.error = err?.error?.mensaje ?? 'Error al registrar el préstamo. Intenta de nuevo.';
+        console.error('Error al verificar límites:', err);
+        this.error = 'No se pudo verificar el límite de préstamos. Intenta de nuevo.';
         this.confirmando = false;
         this.cdr.detectChanges();
       },

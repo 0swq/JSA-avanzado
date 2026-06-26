@@ -148,7 +148,11 @@ import {ConfiguracionMultaService} from '../../_services/configuracion-multa.ser
                                transition-colors duration-150"/>
                     </div>
 
-                    @if (diasRetraso > 0) {
+                    @if (tarifaDiaria === null) {
+                      <div class="bg-stone-100 border border-stone-200 rounded-lg p-4 w-full">
+                        <span class="inline-block w-48 h-5 bg-stone-200 rounded animate-pulse"></span>
+                      </div>
+                    } @else if (diasRetraso > 0) {
                       <div class="bg-red-50 border border-red-200 rounded-lg p-4 w-full">
                         <div class="flex flex-col gap-2">
                           <span class="text-sm font-medium text-red-700">
@@ -161,9 +165,7 @@ import {ConfiguracionMultaService} from '../../_services/configuracion-multa.ser
                           <span class="text-xs text-red-500">Se generará una multa automáticamente.</span>
                         </div>
                       </div>
-                    }
-
-                    @if (diasRetraso === 0) {
+                    } @else {
                       <div class="bg-green-50 border border-green-200 rounded-lg p-4 w-full">
                         <span class="text-sm font-medium text-green-700">
                           El préstamo esta en el tiempo hábil para no generar una multa
@@ -204,7 +206,7 @@ export class DevolverLibroComponent implements OnInit {
   libro: any = null;
 
   fechaDevolucion: string = '';
-  tarifaDiaria: number = 2.50;
+  tarifaDiaria: number | null = null;
   exito: boolean = false;
   error: string = '';
   cargando: boolean = false;
@@ -249,12 +251,15 @@ export class DevolverLibroComponent implements OnInit {
 
     this.configuracionMultaService.listar().subscribe({
       next: (res: any) => {
-        const configs = Array.isArray(res) ? res : (res?.data ?? []);
-        if (configs.length > 0) {
-          this.tarifaDiaria = Number(configs[0].tarifaDiaria) || 2.50;
+        const config: any = res?.data ?? res;
+        if (config && config.tarifaDiaria != null) {
+          this.tarifaDiaria = Number(config.tarifaDiaria);
         }
+        this.cdr.detectChanges();
       },
-      error: () => { /* mantiene tarifaDiaria por defecto */ },
+      error: (err: any) => {
+        console.error('Error al cargar configuración de multa:', err.message);
+      },
     });
   }
 
@@ -267,11 +272,11 @@ export class DevolverLibroComponent implements OnInit {
   }
 
   get multaGenerada(): number {
-    return this.diasRetraso * this.tarifaDiaria;
+    return this.diasRetraso * (this.tarifaDiaria ?? 0);
   }
 
   get mensajeExito(): string {
-    if (this.diasRetraso > 0) {
+    if (this.diasRetraso > 0 && this.tarifaDiaria !== null) {
       return `Devolución registrada. Se generó una multa de S/ ${this.multaGenerada.toFixed(2)}.`;
     }
     return 'Devolución registrada correctamente. Sin multa.';

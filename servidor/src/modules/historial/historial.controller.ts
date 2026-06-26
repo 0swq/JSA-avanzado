@@ -6,12 +6,14 @@ import { RespuestaHistorialDto } from './historial.dto';
 export const historialControlador = {
   async obtenerTodos(req: Request, res: Response, next: NextFunction) {
     try {
-      const { hechoPorId, modulo, nombreAccion, desde, hasta } = req.query;
+      const { hechoPorId, modulo, nombreAccion, accion, buscar, desde, hasta } = req.query;
 
       const filtros: any = {};
       if (hechoPorId) filtros.hechoPorId = hechoPorId as string;
       if (modulo) filtros.modulo = modulo as string;
       if (nombreAccion) filtros.nombreAccion = nombreAccion as string;
+      if (accion) filtros.accion = accion as string;
+      if (buscar) filtros.buscar = buscar as string;
       if (desde) filtros.desde = new Date(desde as string);
       if (hasta) filtros.hasta = new Date(hasta as string);
 

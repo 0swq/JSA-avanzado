@@ -142,6 +142,11 @@ TextoPequenoComponent, TextTituloComponent,
                               tooltip="Ver detalle"/>
                           </a>
                           <app-boton-icono
+                            icono="+"
+                            tamanio="sm"
+                            tooltip="Agregar ejemplar"
+                            (presionado)="agregarEjemplar(libro)"/>
+                          <app-boton-icono
                             icono="✎"
                             tamanio="sm"
                             tooltip="Editar"
@@ -307,6 +312,11 @@ export class AdminLibrosComponent implements OnInit {
   editarLibro(libro: any): void {
     this.navigationService.store.getState().seleccionarLibro(libro.id);
     this.router.navigate(['/admin/libros/editar', libro.id]);
+  }
+
+  agregarEjemplar(libro: any): void {
+    this.navigationService.store.getState().seleccionarLibro(libro.id);
+    this.router.navigate(['/admin/libros', libro.id, 'agregar-ejemplar']);
   }
 
   eliminarLibro(libro: any): void {
