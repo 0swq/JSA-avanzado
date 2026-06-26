@@ -1,6 +1,6 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {DatePipe} from '@angular/common';
-import {Router} from '@angular/router';
+import {Router, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {HeaderComponent} from '../../_shared/componentes/navegacion/header.component';
 import {FooterComponent} from '../../_shared/componentes/navegacion/footer.component';
@@ -10,20 +10,21 @@ import {BotonContornoComponent} from '../../_shared/componentes/botones/boton-co
 import {TextoNormalComponent} from '../../_shared/componentes/texto/texto-normal.component';
 import {TextoPequenoComponent} from '../../_shared/componentes/texto/texto-pequeno.component';
 import {TextTituloComponent} from '../../_shared/componentes/texto/text-titulo.component';
-import {PilaVerticalComponent} from '../../_shared/componentes/diseno/pila-vertical.component';
-import {PilaHorizontalComponent} from '../../_shared/componentes/diseno/pila-horizontal.component';
 import {AlertaComponent} from '../../_shared/componentes/retroalimentacion/alerta.component';
 import {SelectorComponent} from '../../_shared/componentes/entradas/selector.component';
 import {EstadoVacioComponent} from '../../_shared/componentes/retroalimentacion/estado-vacio.component';
 import {NavigationService} from '../../_services/navigation-store';
-import {Prestamo, Ejemplar} from '../../model';
+import {LibroService} from '../../_services/libro.service';
+import {PrestamoService} from '../../_services/prestamo.service';
+import {StorageService} from '../../_services/storage.service';
+import {Ejemplar} from '../../model';
 
 @Component({
   selector: 'app-realizar-prestamo',
   standalone: true,
   imports: [HeaderComponent, FooterComponent, TarjetaComponent, BotonComponent,
     BotonContornoComponent, TextoNormalComponent, TextoPequenoComponent, TextTituloComponent,
-    PilaVerticalComponent, PilaHorizontalComponent, AlertaComponent, SelectorComponent,
+    AlertaComponent, SelectorComponent,
     EstadoVacioComponent, FormsModule, DatePipe],
   template: `
     <div class="min-h-screen flex flex-col bg-amber-50/30">
@@ -37,7 +38,15 @@ import {Prestamo, Ejemplar} from '../../model';
           ← Volver al libro
         </button>
 
-        @if (libro) {
+        @if (error) {
+          <app-alerta tipo="error" [mensaje]="error"/>
+        }
+
+        @if (cargando) {
+          <div class="text-center py-16">
+            <texto-normal>Cargando libro...</texto-normal>
+          </div>
+        } @else if (libro) {
           <div class="flex flex-col gap-6">
 
             <texto-titulo>Realizar Préstamo</texto-titulo>
@@ -85,10 +94,6 @@ import {Prestamo, Ejemplar} from '../../model';
               <app-alerta tipo="exito" mensaje="Préstamo registrado correctamente. Puedes verlo en Mis Préstamos."/>
             }
 
-            @if (error) {
-              <app-alerta tipo="error" [mensaje]="error"/>
-            }
-
             @if (!exito) {
               <app-tarjeta titulo="Datos del préstamo">
                 <div class="flex flex-col gap-6">
@@ -103,11 +108,35 @@ import {Prestamo, Ejemplar} from '../../model';
                       placeholder="Selecciona un ejemplar..."
                     />
 
+                    <!-- Aviso de límite según rol -->
+                    <div class="flex items-start gap-2 p-3 rounded-lg bg-amber-100 border border-amber-300 text-sm text-amber-800">
+                      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                      <span>
+                        Como <strong>{{ rolUsuario || 'usuario' }}</strong>, puedes solicitar préstamos de hasta <strong>{{ diasPrestamo }} días</strong>.
+                      </span>
+                    </div>
+
                     <div class="flex flex-col gap-1">
-                      <span class="text-sm font-medium text-gray-700">Fecha máxima de devolución</span>
-                      <span class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-stone-700">
-                        {{ fechaMaxDevolucion | date: 'dd/MM/yyyy' }}
-                        <span class="text-xs text-gray-400 ml-2">({{ diasPrestamo }} días de préstamo)</span>
+                      <label for="fecha-devolucion" class="text-sm font-medium text-gray-700">
+                        Fecha de devolución <span class="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="fecha-devolucion"
+                        type="date"
+                        [ngModel]="fechaDevolucion"
+                        (ngModelChange)="onFechaCambio($event)"
+                        [min]="fechaMinima"
+                        [max]="fechaMaxima"
+                        class="w-full px-3 py-2 border rounded-lg text-sm transition-colors duration-150
+                               focus:outline-none focus:ring-2 focus:ring-offset-0
+                               focus:border-amber-500 focus:ring-amber-200 border-gray-300"
+                      />
+                      <span class="text-xs text-gray-400 ml-1">
+                        El préstamo debe devolverse en esta fecha. {{ textoLimiteDias }}.
                       </span>
                     </div>
 
@@ -121,12 +150,14 @@ import {Prestamo, Ejemplar} from '../../model';
                           </div>
                           <div class="flex justify-between text-sm text-stone-600">
                             <span>Ubicación</span>
-                            <span>{{ ejemplarSeleccionado.ubicacion }}</span>
+                            <span>{{ ejemplarSeleccionado.ubicacion ?? '—' }}</span>
                           </div>
-                          <div class="flex justify-between text-sm text-stone-600">
-                            <span>Préstamo hasta</span>
-                            <span>{{ fechaMaxDevolucion | date: 'dd/MM/yyyy' }}</span>
-                          </div>
+                          @if (fechaDevolucion) {
+                            <div class="flex justify-between text-sm text-stone-600">
+                              <span>Préstamo hasta</span>
+                              <span>{{ fechaDevolucion | date: 'dd/MM/yyyy' }}</span>
+                            </div>
+                          }
                         </div>
                       </div>
                     }
@@ -137,6 +168,7 @@ import {Prestamo, Ejemplar} from '../../model';
                         tamanio="md"
                         [anchoCompleto]="false"
                         [deshabilitado]="!formularioValido"
+                        [cargando]="confirmando"
                         (presionado)="confirmarPrestamo()"/>
                       <app-boton-contorno
                         etiqueta="Cancelar"
@@ -176,32 +208,119 @@ import {Prestamo, Ejemplar} from '../../model';
 })
 export class RealizarPrestamoComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly navigationService = inject(NavigationService);
+  private readonly libroService = inject(LibroService);
+  private readonly prestamoService = inject(PrestamoService);
+  private readonly storageService = inject(StorageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   errorImagen = false;
   exito = false;
   error: string = '';
+  fechaDevolucion: string = '';
   ejemplarSeleccionadoId: string = '';
-  diasPrestamo: number = 7;
+  cargando: boolean = false;
+  confirmando: boolean = false;
+  libro: any = null;
+  rolUsuario: string = '';
 
   ngOnInit(): void {
-    const id = this.navigationService.store.getState().libroSeleccionadoId;
-    void id;
+    const id = this.route.snapshot.paramMap.get('id')
+      ?? this.navigationService.store.getState().libroSeleccionadoId;
+
+    console.log('[RealizarPrestamo] ID obtenido:', id);
+
+    // Obtener el rol del usuario para la validación de fecha
+    this.rolUsuario = this.storageService.getRol()?.toLowerCase() ?? '';
+
+    if (id) {
+      this.navigationService.store.getState().seleccionarLibro(id);
+      this.cargarLibro(id);
+    }
+  }
+
+  cargarLibro(id: string): void {
+    console.log('[RealizarPrestamo] Cargando libro:', id);
+    this.cargando = true;
+    this.libroService.obtener(id).subscribe({
+      next: (data: any) => {
+        console.log('[RealizarPrestamo] Libro recibido:', data);
+        const libro = data?.data ?? data;
+        this.libro = this.mapearLibro(libro);
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[RealizarPrestamo] Error al cargar libro:', err);
+        this.error = 'No se pudo cargar la información del libro.';
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private mapearLibro(l: any): any {
+    const ejemplares: any[] = Array.isArray(l.ejemplares) ? l.ejemplares : [];
+    const recursos: any[] = Array.isArray(l.recursosDigitales) ? l.recursosDigitales : [];
+    return {
+      ...l,
+      foto: l.fotoUrl ?? l.foto ?? null,
+      ejemplaresTotal: ejemplares.length,
+      ejemplaresDisponibles: ejemplares.filter((e: any) => e.estado === 'disponible').length,
+      autores: Array.isArray(l.autores)
+        ? l.autores.map((a: any) => a.autor ? `${a.autor.nombre ?? ''} ${a.autor.apellidos ?? ''}`.trim() : String(a))
+        : [],
+      categorias: Array.isArray(l.categorias)
+        ? l.categorias.map((c: any) => c.categoria?.nombre ?? String(c))
+        : [],
+      editorial: l.editorial?.nombre ?? l.editorial ?? '',
+      archivosDigitales: recursos.map((r: any) => r.formato ?? r.tipo ?? 'pdf').filter(Boolean),
+      _ejemplares: ejemplares,
+    };
+  }
+
+  get ejemplaresDisponibles(): Ejemplar[] {
+    if (!this.libro?._ejemplares) return [];
+    return this.libro._ejemplares.filter((e: any) => e.estado === 'disponible');
+  }
+
+  get diasPrestamo(): number {
+    return this.rolUsuario === 'estudiante' ? 7 : 14;
   }
 
   get fechaMaxDevolucion(): Date {
-    const fecha = new Date();
-    fecha.setDate(fecha.getDate() + this.diasPrestamo);
+    const fecha = new Date(this.fechaDevolucion);
+    if (!this.fechaDevolucion) {
+      fecha.setDate(fecha.getDate() + this.diasPrestamo);
+    }
     return fecha;
   }
 
+  get fechaMinima(): string {
+    const maniana = new Date();
+    maniana.setDate(maniana.getDate() + 1);
+    return maniana.toISOString().split('T')[0];
+  }
+  get fechaMaxima(): string {
+    const hoy = new Date();
+    const diasMaximos = this.rolUsuario === 'estudiante' ? 7 : 14;
+    hoy.setDate(hoy.getDate() + diasMaximos);
+    return hoy.toISOString().split('T')[0];
+  }
+
+  get textoLimiteDias(): string {
+    const dias = this.rolUsuario === 'estudiante' ? 7 : 14;
+    return `máximo ${dias} días (${this.rolUsuario || 'usuario'})`;
+  }
+
   get formularioValido(): boolean {
-    return !!this.ejemplarSeleccionadoId && !this.exito;
+    return !!this.fechaDevolucion && !!this.ejemplarSeleccionadoId && !this.exito && !this.confirmando;
   }
 
   get opcionesEjemplares(): Array<{ etiqueta: string; valor: string }> {
     return this.ejemplaresDisponibles.map(e => ({
-      etiqueta: `${e.codigoBarras} — ${e.ubicacion}`,
+      etiqueta: `${e.codigoBarras} — ${e.ubicacion ?? 'Sin ubicación'}`,
       valor: e.id,
     }));
   }
@@ -214,184 +333,77 @@ export class RealizarPrestamoComponent implements OnInit {
     this.ejemplarSeleccionadoId = valor;
   }
 
+  onFechaCambio(valor: string): void {
+    this.fechaDevolucion = valor;
+    if (valor) {
+      const fechaSel = new Date(valor);
+      const fechaMax = new Date(this.fechaMaxima);
+      if (fechaSel > fechaMax) {
+        const dias = this.rolUsuario === 'estudiante' ? 7 : 14;
+        this.error = `Como ${this.rolUsuario}, solo puedes solicitar préstamos hasta ${dias} días. Selecciona una fecha anterior.`;
+      } else {
+        this.error = '';
+      }
+    }
+  }
+
   confirmarPrestamo(): void {
     if (!this.libro || !this.ejemplarSeleccionado) {
       this.error = 'Debes seleccionar un ejemplar disponible.';
       return;
     }
 
-    const nuevoPrestamo: Prestamo = {
-      id: crypto.randomUUID(),
-      usuarioId: 'usuario-actual',
-      ejemplarId: this.ejemplarSeleccionado.id,
-      fechaMaxDevolucion: this.fechaMaxDevolucion.toISOString(),
-      estado: 'activo',
-      creadoEn: new Date().toISOString(),
-    };
+    if (!this.fechaDevolucion) {
+      this.error = 'La fecha de devolución es obligatoria.';
+      return;
+    }
 
-    this.navigationService.store.getState().seleccionarPrestamo(nuevoPrestamo.id);
+    // Validar fecha máxima según rol
+    const fechaSel = new Date(this.fechaDevolucion);
+    const fechaMax = new Date(this.fechaMaxima);
+    if (fechaSel > fechaMax) {
+      const dias = this.rolUsuario === 'estudiante' ? 7 : 14;
+      this.error = `Como ${this.rolUsuario}, solo puedes solicitar préstamos hasta ${dias} días.`;
+      return;
+    }
 
-    const prestamosGuardados = JSON.parse(localStorage.getItem('prestamos') ?? '[]');
-    prestamosGuardados.push(nuevoPrestamo);
-    localStorage.setItem('prestamos', JSON.stringify(prestamosGuardados));
+    // Guardar el id antes de la llamada async para evitar problemas con el getter
+    const ejemplarId = this.ejemplarSeleccionado.id;
 
-    this.exito = true;
+    this.confirmando = true;
     this.error = '';
+
+    this.prestamoService.crear({
+      usuarioId: this.storageService.getId(),
+      ejemplarId: ejemplarId,
+      fechaMaxDevolucion: new Date(this.fechaDevolucion).toISOString(),
+    }).subscribe({
+      next: (res: any) => {
+        const creado = res?.data ?? res;
+        this.navigationService.store.getState().seleccionarPrestamo(creado.id);
+
+        // Actualizar localmente el ejemplar: nueva referencia del array para que Angular detecte el cambio
+        this.libro._ejemplares = this.libro._ejemplares.map((e: any) =>
+          e.id === ejemplarId ? { ...e, estado: 'prestado' } : e
+        );
+        this.libro.ejemplaresDisponibles = this.libro._ejemplares.filter((e: any) => e.estado === 'disponible').length;
+        console.log('[RealizarPrestamo] Ejemplares disponibles actualizados:', this.libro.ejemplaresDisponibles);
+
+        this.exito = true;
+        this.confirmando = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al crear préstamo:', err.message);
+        this.error = err?.error?.mensaje ?? 'Error al registrar el préstamo. Intenta de nuevo.';
+        this.confirmando = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   volver(): void {
     const id = this.navigationService.store.getState().libroSeleccionadoId;
     this.router.navigate(['/catalogo', id]);
-  }
-
-  libros = [
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-      titulo: 'Cien Años de Soledad',
-      isbn: '978-0307474728',
-      anioPublicacion: 1967,
-      idioma: 'Español',
-      descripcion: 'La historia de la familia Buendía a lo largo de varias generaciones en Macondo.',
-      editorial: 'Editorial Sudamericana',
-      autores: ['Gabriel García Márquez'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780307474728-M.jpg',
-      archivosDigitales: ['pdf', 'mp3'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-222222222222',
-      titulo: 'Clean Code',
-      isbn: '978-0132350884',
-      anioPublicacion: 2008,
-      idioma: 'Inglés',
-      descripcion: 'Una guía de buenas prácticas para escribir código limpio y mantenible.',
-      editorial: 'Prentice Hall',
-      autores: ['Robert C. Martin'],
-      categorias: ['Ingeniería de Software', 'Tecnología'],
-      ejemplaresDisponibles: 0,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780132350884-M.jpg',
-      archivosDigitales: ['pdf'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-      titulo: 'Don Quijote de la Mancha',
-      isbn: '978-8420412146',
-      anioPublicacion: 1605,
-      idioma: 'Español',
-      descripcion: 'Las aventuras de un hidalgo que enloquece leyendo novelas de caballería.',
-      editorial: 'Editorial Cátedra',
-      autores: ['Miguel de Cervantes'],
-      categorias: ['Literatura', 'Clásicos'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788420412146-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444',
-      titulo: 'Breve Historia del Tiempo',
-      isbn: '978-0553380163',
-      anioPublicacion: 1988,
-      idioma: 'Español',
-      descripcion: 'Una introducción accesible a la cosmología y la física moderna.',
-      editorial: 'Bantam Books',
-      autores: ['Stephen Hawking'],
-      categorias: ['Ciencia', 'Física'],
-      ejemplaresDisponibles: 1,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780553380163-M.jpg',
-      archivosDigitales: ['pdf', 'mp4'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-      titulo: 'Introducción a los Algoritmos',
-      isbn: '978-0262033848',
-      anioPublicacion: 2009,
-      idioma: 'Inglés',
-      descripcion: 'Texto de referencia sobre algoritmos y estructuras de datos.',
-      editorial: 'MIT Press',
-      autores: ['Thomas H. Cormen', 'Charles E. Leiserson'],
-      categorias: ['Ingeniería de Software', 'Matemáticas'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780262033848-M.jpg',
-      archivosDigitales: ['pdf'],
-    },
-  ];
-
-  ejemplaresPorLibro: Record<string, Ejemplar[]> = {
-    '8f1e2c10-1a2b-4c3d-9e8f-111111111111': [
-      {
-        id: 'e-101', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-        codigoBarras: 'BC-CSA-001', estado: 'disponible', ubicacion: 'Estante A-03',
-        fechaAdquisicion: '2024-01-15', creadoEn: '2024-01-15T00:00:00Z',
-      },
-      {
-        id: 'e-102', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-        codigoBarras: 'BC-CSA-002', estado: 'disponible', ubicacion: 'Estante A-03',
-        fechaAdquisicion: '2024-01-15', creadoEn: '2024-01-15T00:00:00Z',
-      },
-      {
-        id: 'e-103', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-        codigoBarras: 'BC-CSA-003', estado: 'disponible', ubicacion: 'Estante A-04',
-        fechaAdquisicion: '2024-06-01', creadoEn: '2024-06-01T00:00:00Z',
-      },
-    ],
-    '8f1e2c10-1a2b-4c3d-9e8f-222222222222': [],
-    '8f1e2c10-1a2b-4c3d-9e8f-333333333333': [
-      {
-        id: 'e-301', libroId: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-        codigoBarras: 'BC-DQJ-001', estado: 'disponible', ubicacion: 'Estante B-01',
-        fechaAdquisicion: '2023-09-10', creadoEn: '2023-09-10T00:00:00Z',
-      },
-      {
-        id: 'e-302', libroId: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-        codigoBarras: 'BC-DQJ-002', estado: 'disponible', ubicacion: 'Estante B-01',
-        fechaAdquisicion: '2023-09-10', creadoEn: '2023-09-10T00:00:00Z',
-      },
-    ],
-    '8f1e2c10-1a2b-4c3d-9e8f-444444444444': [
-      {
-        id: 'e-401', libroId: '8f1e2c10-1a2b-4c3d-9e8f-444444444444',
-        codigoBarras: 'BC-BHT-001', estado: 'disponible', ubicacion: 'Estante C-02',
-        fechaAdquisicion: '2025-02-20', creadoEn: '2025-02-20T00:00:00Z',
-      },
-    ],
-    '8f1e2c10-1a2b-4c3d-9e8f-555555555555': [
-      {
-        id: 'e-501', libroId: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-        codigoBarras: 'BC-ITP-001', estado: 'disponible', ubicacion: 'Estante C-05',
-        fechaAdquisicion: '2024-11-01', creadoEn: '2024-11-01T00:00:00Z',
-      },
-      {
-        id: 'e-502', libroId: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-        codigoBarras: 'BC-ITP-002', estado: 'disponible', ubicacion: 'Estante C-05',
-        fechaAdquisicion: '2024-11-01', creadoEn: '2024-11-01T00:00:00Z',
-      },
-      {
-        id: 'e-503', libroId: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-        codigoBarras: 'BC-ITP-003', estado: 'disponible', ubicacion: 'Estante C-06',
-        fechaAdquisicion: '2025-01-10', creadoEn: '2025-01-10T00:00:00Z',
-      },
-      {
-        id: 'e-504', libroId: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-        codigoBarras: 'BC-ITP-004', estado: 'disponible', ubicacion: 'Estante C-06',
-        fechaAdquisicion: '2025-01-10', creadoEn: '2025-01-10T00:00:00Z',
-      },
-    ],
-  };
-
-  get ejemplaresDisponibles(): Ejemplar[] {
-    if (!this.libro) return [];
-    return (this.ejemplaresPorLibro[this.libro.id] ?? [])
-      .filter(e => e.estado === 'disponible');
-  }
-
-  get libro() {
-    const id = this.navigationService.store.getState().libroSeleccionadoId;
-    return this.libros.find(l => l.id === id) ?? null;
   }
 }

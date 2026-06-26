@@ -57,6 +57,16 @@ export const libroControlador = {
             next(error);
         }
     },
+    async solicitarGrafo(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { q } = req.query;
+            const resultado = await libroServicio.solicitarGrafo(q as string);
+            res.json({ success: true, ...resultado });
+        } catch (error) {
+            next(error);
+        }
+    },
+
     async buscar(req: Request, res: Response, next: NextFunction) {
         try {
             const {q, pagina, porPagina} = req.query;

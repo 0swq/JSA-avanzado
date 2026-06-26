@@ -8,10 +8,13 @@ import { crearEjemplarSchema, actualizarEjemplarSchema } from './ejemplar.valida
 
 const router = Router();
 router.use(middlewareAutenticacion);
-router.use(middlewareRol(['admin', 'bibliotecario']));
 
+// Ruta pública para que cualquier usuario autenticado pueda ver ejemplares por libro (ej: al reservar)
+router.get('/libro/:libroId', middlewareRol(['admin', 'bibliotecario', 'docente', 'estudiante']), ejemplarControlador.obtenerPorLibro);
+
+// Las demás rutas requieren admin o bibliotecario
+router.use(middlewareRol(['admin', 'bibliotecario']));
 router.get('/', ejemplarControlador.obtenerTodos);
-router.get('/libro/:libroId', ejemplarControlador.obtenerPorLibro);
 router.get('/:id', ejemplarControlador.obtenerPorId);
 router.post('/', validar(crearEjemplarSchema), ejemplarControlador.crear);
 router.patch('/:id', validar(actualizarEjemplarSchema), ejemplarControlador.actualizar);

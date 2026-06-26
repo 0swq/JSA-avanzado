@@ -45,6 +45,7 @@ export interface Libro {
   editorialId: string;
   anioPublicacion?: number;
   idioma?: string;
+  fotoUrl?: string;
   descripcion?: string;
   busquedaFts?: string;
   publicado: boolean;
@@ -113,6 +114,7 @@ export interface Reserva {
   id: string; // uuid
   usuarioId: string; // -> usuario.id
   libroId: string; // uuid -> libro.id
+  ejemplarId: string; // uuid -> ejemplar.id
   fechaExpiracion: string; // timestamptz
   estado: 'pendiente' | 'activa' | 'cancelada' | 'completada';
   creadoEn: string;

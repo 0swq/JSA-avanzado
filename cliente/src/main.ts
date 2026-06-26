@@ -11,6 +11,6 @@ bootstrapApplication(AppComponent, {
     provideZoneChangeDetection(),
     provideHttpClient(withInterceptorsFromDi()),
     provideRouter(routes),
-    httpInterceptorProviders,
+    ...httpInterceptorProviders,
   ],
 }).catch((err) => console.error(err));

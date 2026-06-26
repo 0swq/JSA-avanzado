@@ -64,7 +64,6 @@ import {StorageService} from '../../../_services/storage.service';
               <a routerLink="/admin/prestamos" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Préstamos</a>
               <a routerLink="/admin/reservas" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Reservas</a>
               <a routerLink="/admin/multas" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Multas</a>
-              <a routerLink="/admin/pagos" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Pagos</a>
               <a routerLink="/admin/historial" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Historial</a>
             </div>
           }
@@ -78,8 +77,6 @@ import {StorageService} from '../../../_services/storage.service';
             </span>
             <div class="mt-1 flex flex-col gap-0.5">
               <a routerLink="/admin/dashboard" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Dashboard</a>
-              <a routerLink="/admin/usuarios" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Usuarios</a>
-              <a routerLink="/admin/roles" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Roles</a>
               <a routerLink="/admin/configuracion-multa" routerLinkActive="bg-amber-50 text-amber-700" class="enlace-sidebar">Config. multas</a>
             </div>
           </div>

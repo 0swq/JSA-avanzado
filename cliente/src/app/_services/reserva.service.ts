@@ -37,7 +37,7 @@ export class ReservaService {
    * Crear reserva — máximo 3 activas por usuario.
    * El backend rechaza con 409 si se excede el límite.
    */
-  crear(data: { libroId: string; fechaExpiracion?: string }): Observable<any> {
+  crear(data: { libroId: string; ejemplarId: string; fechaExpiracion?: string }): Observable<any> {
     return this.http.post(this.base, data);
   }
 

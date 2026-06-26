@@ -1,5 +1,5 @@
-import {Component, inject, OnInit} from '@angular/core';
-import {Router, RouterModule} from '@angular/router';
+import {ChangeDetectorRef, Component, inject, OnInit} from '@angular/core';
+import {ActivatedRoute, Router, RouterModule} from '@angular/router';
 import {DatePipe} from '@angular/common';
 import {SidebarComponent} from '../../_shared/componentes/navegacion/sidebar.component';
 import {PilaVerticalComponent} from '../../_shared/componentes/diseno/pila-vertical.component';
@@ -13,7 +13,7 @@ import {TextTituloComponent} from '../../_shared/componentes/texto/text-titulo.c
 import {InsigniaComponent} from '../../_shared/componentes/datos/insignia.component';
 import {AvatarComponent} from '../../_shared/componentes/datos/avatar.component';
 import {AlertaComponent} from '../../_shared/componentes/retroalimentacion/alerta.component';
-import {NavigationService} from '../../_services/navigation-store';
+import {MultaService} from '../../_services/multa.service';
 import {Multa, Prestamo, Ejemplar, Usuario} from '../../model';
 
 @Component({
@@ -23,7 +23,7 @@ import {Multa, Prestamo, Ejemplar, Usuario} from '../../model';
     SidebarComponent, PilaVerticalComponent, PilaHorizontalComponent,
     TarjetaComponent, BotonComponent, BotonContornoComponent,
     TextoNormalComponent, TextoPequenoComponent, TextTituloComponent,
-    InsigniaComponent, AvatarComponent,
+    InsigniaComponent, AvatarComponent, AlertaComponent,
     RouterModule, DatePipe,
   ],
   template: `
@@ -40,6 +40,13 @@ import {Multa, Prestamo, Ejemplar, Usuario} from '../../model';
             ← Volver a multas
           </button>
 
+          @if (mensajeExito) {
+            <app-alerta tipo="exito" [mensaje]="mensajeExito" class="mb-4 block"/>
+          }
+          @if (error) {
+            <app-alerta tipo="error" [mensaje]="error" class="mb-4 block"/>
+          }
+
           <app-pila-horizontal espacio="4" alinear="centro" justificar="entre" class="mb-6 flex-wrap w-full">
             <app-pila-vertical espacio="1" class="w-full">
               <texto-titulo tamanio="xl">Detalle de Multa</texto-titulo>
@@ -47,7 +54,11 @@ import {Multa, Prestamo, Ejemplar, Usuario} from '../../model';
             </app-pila-vertical>
           </app-pila-horizontal>
 
-          @if (!multa) {
+          @if (cargando) {
+            <div class="text-center py-16">
+              <texto-normal>Cargando detalle de la multa…</texto-normal>
+            </div>
+          } @else if (!multa) {
             <div class="text-center py-16">
               <texto-normal>No se encontró la multa seleccionada.</texto-normal>
               <app-boton
@@ -119,19 +130,11 @@ import {Multa, Prestamo, Ejemplar, Usuario} from '../../model';
               @if (libro) {
                 <app-tarjeta titulo="Libro" class="w-full">
                   <div class="flex flex-col sm:flex-row items-start gap-4 w-full">
-                    <div class="aspect-[9/16] w-16 flex-shrink-0 rounded-lg bg-gray-200 overflow-hidden flex items-center justify-center text-gray-400">
-                      @if (libro.foto) {
-                        <img [alt]="libro.titulo" [src]="libro.foto" class="w-full h-full object-cover"/>
-                      } @else {
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
-                        </svg>
-                      }
-                    </div>
+
                     <div class="flex flex-col gap-1 w-full flex-1">
                       <p class="font-semibold text-stone-800">{{ libro.titulo }}</p>
                       <texto-pequeno>{{ libro.autores.join(', ') }}</texto-pequeno>
-                      <texto-pequeno>{{ libro.editorial }} · {{ libro.anioPublicacion }} · ISBN {{ libro.isbn }}</texto-pequeno>
+                      <texto-pequeno>{{ $any(libro.editorial)?.nombre || libro.editorial }} · {{ libro.anioPublicacion }} · ISBN {{ libro.isbn }}</texto-pequeno>
                       <div class="flex flex-wrap gap-1 mt-1">
                         @for (cat of libro.categorias; track cat) {
                           <span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-100">
@@ -235,100 +238,139 @@ import {Multa, Prestamo, Ejemplar, Usuario} from '../../model';
 })
 export class DetalleMultaComponent implements OnInit {
   private readonly router = inject(Router);
-  private readonly navigationService = inject(NavigationService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly multaService = inject(MultaService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
+  cargando: boolean = true;
   multa: Multa | null = null;
   prestamo: Prestamo | null = null;
   ejemplar: Ejemplar | null = null;
   usuario: Usuario | null = null;
   libro: any = null;
+  mensajeExito: string = '';
+  error: string = '';
 
   ngOnInit(): void {
-    const idMulta = this.navigationService.store.getState().multaSeleccionadaId;
+    const idMulta = this.route.snapshot.paramMap.get('id');
     if (idMulta) {
       this.cargarDetalle(idMulta);
+    } else {
+      this.cargando = false;
+      this.cdr.detectChanges();
     }
   }
 
   cargarDetalle(idMulta: string): void {
-    this.multa = this.multasHardcoded.find(m => m.id === idMulta) ?? null;
-    if (!this.multa) return;
+    this.error = '';
+    this.cargando = true;
 
-    this.prestamo = this.prestamosHardcoded.find(p => p.id === this.multa!.prestamoId) ?? null;
-    if (!this.prestamo) return;
+    this.multaService.obtener(idMulta).subscribe({
+      next: (res: any) => {
+        const data = res?.data ?? res;
 
-    this.ejemplar = this.ejemplaresHardcoded.find(e => e.id === this.prestamo!.ejemplarId) ?? null;
+        this.multa = {
+          id: data.id,
+          prestamoId: data.prestamoId,
+          monto: Number(data.monto),
+          diasMora: Number(data.diasMora),
+          estado: data.estado,
+          creadoEn: data.creadoEn,
+        };
 
-    this.usuario = this.usuariosHardcoded.find(u => u.id === this.prestamo!.usuarioId) ?? null;
+        const prestamoData = data.prestamo;
+        if (prestamoData) {
+          this.prestamo = {
+            id: prestamoData.id,
+            usuarioId: prestamoData.usuarioId,
+            ejemplarId: prestamoData.ejemplarId,
+            fechaMaxDevolucion: prestamoData.fechaMaxDevolucion,
+            fechaDevolucion: prestamoData.fechaDevolucion ?? undefined,
+            estado: prestamoData.estado,
+            creadoEn: prestamoData.creadoEn,
+          };
 
-    if (this.ejemplar) {
-      this.libro = this.librosHardcoded.find((l: any) => l.id === this.ejemplar!.libroId) ?? null;
-    }
+          const ejemplarData = prestamoData.ejemplar;
+          if (ejemplarData) {
+            this.ejemplar = {
+              id: ejemplarData.id,
+              libroId: ejemplarData.libroId,
+              codigoBarras: ejemplarData.codigoBarras,
+              estado: ejemplarData.estado,
+              ubicacion: ejemplarData.ubicacion ?? undefined,
+              fechaAdquisicion: ejemplarData.fechaAdquisicion ?? undefined,
+              creadoEn: ejemplarData.creadoEn,
+            };
+
+            const libroData = ejemplarData.libro;
+            if (libroData) {
+              this.libro = {
+                id: libroData.id,
+                titulo: libroData.titulo,
+                isbn: libroData.isbn ?? undefined,
+                anioPublicacion: libroData.anioPublicacion ?? undefined,
+                idioma: libroData.idioma ?? undefined,
+                foto: libroData.fotoUrl ?? undefined,
+                editorial: libroData.editorial ?? undefined,
+                autores: (libroData.autores || []).map((la: any) =>
+                  la.autor ? [la.autor.nombre, la.autor.apellidos].filter(Boolean).join(' ') : ''
+                ),
+                categorias: (libroData.categorias || []).map((lc: any) => lc.categoria?.nombre || ''),
+              };
+            }
+          }
+
+          const usuarioData = prestamoData.usuario;
+          if (usuarioData) {
+            this.usuario = {
+              id: usuarioData.id,
+              rolId: usuarioData.rolId || '',
+              nombre: usuarioData.nombre ?? undefined,
+              apellidos: usuarioData.apellidos ?? undefined,
+              dni: usuarioData.dni ?? undefined,
+              correo: usuarioData.correo ?? undefined,
+              creadoEn: usuarioData.creadoEn || '',
+            };
+          }
+        }
+
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.error = err?.error?.mensaje ?? err?.message ?? 'Error al cargar el detalle de la multa.';
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
-  registrarPago(): void {}
 
-  perdonarMulta(): void {}
+  registrarPago(): void {
+    if (!this.multa) return;
+    this.router.navigate(['/admin/multas/pagar', this.multa.id]);
+  }
+
+  perdonarMulta(): void {
+    if (!this.multa || this.multa.estado !== 'pendiente') return;
+    if (!confirm('¿Estás seguro de que deseas perdonar esta multa?')) return;
+
+    this.error = '';
+    this.mensajeExito = '';
+
+    this.multaService.actualizar(this.multa.id, {estado: 'perdonada'}).subscribe({
+      next: () => {
+        this.multa!.estado = 'perdonada';
+        this.mensajeExito = 'Multa perdonada correctamente.';
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.error = err?.error?.mensaje ?? err?.message ?? 'Error al perdonar la multa.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
 
   volver(): void {
     this.router.navigate(['/admin/multas']);
   }
-  multasHardcoded: Multa[] = [
-    {id: 'm-001', prestamoId: 'p-001', monto: 15.50, diasMora: 5, estado: 'pendiente', creadoEn: '2026-06-10T00:00:00Z'},
-    {id: 'm-002', prestamoId: 'p-002', monto: 32.00, diasMora: 12, estado: 'pendiente', creadoEn: '2026-06-01T00:00:00Z'},
-    {id: 'm-003', prestamoId: 'p-003', monto: 8.00, diasMora: 3, estado: 'pagada', creadoEn: '2026-05-20T00:00:00Z'},
-  ];
-
-  prestamosHardcoded: Prestamo[] = [
-    {
-      id: 'p-001', usuarioId: 'u-001', ejemplarId: 'e-101',
-      fechaMaxDevolucion: '2026-06-05T00:00:00Z',
-      fechaDevolucion: undefined,
-      estado: 'vencido', creadoEn: '2026-05-28T00:00:00Z',
-    },
-    {
-      id: 'p-002', usuarioId: 'u-002', ejemplarId: 'e-301',
-      fechaMaxDevolucion: '2026-05-20T00:00:00Z',
-      fechaDevolucion: undefined,
-      estado: 'vencido', creadoEn: '2026-05-10T00:00:00Z',
-    },
-    {
-      id: 'p-003', usuarioId: 'u-003', ejemplarId: 'e-103',
-      fechaMaxDevolucion: '2026-05-17T00:00:00Z',
-      fechaDevolucion: '2026-05-20T00:00:00Z',
-      estado: 'devuelto', creadoEn: '2026-05-10T00:00:00Z',
-    },
-  ];
-
-  ejemplaresHardcoded: Ejemplar[] = [
-    {id: 'e-101', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111', codigoBarras: 'BC-CSA-001', estado: 'prestado', ubicacion: 'Estante A-03', fechaAdquisicion: '2024-01-15', creadoEn: '2024-01-15T00:00:00Z'},
-    {id: 'e-103', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111', codigoBarras: 'BC-CSA-003', estado: 'prestado', ubicacion: 'Estante A-04', fechaAdquisicion: '2024-06-01', creadoEn: '2024-06-01T00:00:00Z'},
-    {id: 'e-301', libroId: '8f1e2c10-1a2b-4c3d-9e8f-333333333333', codigoBarras: 'BC-DQJ-001', estado: 'prestado', ubicacion: 'Estante B-01', fechaAdquisicion: '2023-09-10', creadoEn: '2023-09-10T00:00:00Z'},
-  ];
-
-  usuariosHardcoded: Usuario[] = [
-    {id: 'u-001', rolId: 'r-003', nombre: 'Carlos', apellidos: 'Gómez López', dni: '12345678', correo: 'carlos@correo.com', creadoEn: '2025-01-01T00:00:00Z'},
-    {id: 'u-002', rolId: 'r-003', nombre: 'María', apellidos: 'Pérez Ríos', dni: '87654321', correo: 'maria@correo.com', creadoEn: '2025-02-01T00:00:00Z'},
-    {id: 'u-003', rolId: 'r-004', nombre: 'Ana', apellidos: 'Torres Vega', dni: '11223344', correo: 'ana@correo.com', creadoEn: '2025-03-01T00:00:00Z'},
-  ];
-
-  librosHardcoded = [
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-      titulo: 'Cien Años de Soledad',
-      isbn: '978-0307474728', anioPublicacion: 1967, idioma: 'Español',
-      editorial: 'Editorial Sudamericana',
-      autores: ['Gabriel García Márquez'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      foto: 'https://covers.openlibrary.org/b/isbn/9780307474728-M.jpg',
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-      titulo: 'Don Quijote de la Mancha',
-      isbn: '978-8420412146', anioPublicacion: 1605, idioma: 'Español',
-      editorial: 'Editorial Cátedra',
-      autores: ['Miguel de Cervantes'],
-      categorias: ['Literatura', 'Clásicos'],
-      foto: 'https://covers.openlibrary.org/b/isbn/9788420412146-M.jpg',
-    },
-  ];
 }

@@ -1,5 +1,6 @@
-import {Component, inject, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
+import {DatePipe} from '@angular/common';
+import {Router, ActivatedRoute} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {HeaderComponent} from '../../_shared/componentes/navegacion/header.component';
 import {FooterComponent} from '../../_shared/componentes/navegacion/footer.component';
@@ -9,18 +10,22 @@ import {BotonContornoComponent} from '../../_shared/componentes/botones/boton-co
 import {TextoNormalComponent} from '../../_shared/componentes/texto/texto-normal.component';
 import {TextoPequenoComponent} from '../../_shared/componentes/texto/texto-pequeno.component';
 import {TextTituloComponent} from '../../_shared/componentes/texto/text-titulo.component';
-import {PilaVerticalComponent} from '../../_shared/componentes/diseno/pila-vertical.component';
-import {PilaHorizontalComponent} from '../../_shared/componentes/diseno/pila-horizontal.component';
 import {AlertaComponent} from '../../_shared/componentes/retroalimentacion/alerta.component';
+import {SelectorComponent} from '../../_shared/componentes/entradas/selector.component';
+import {EstadoVacioComponent} from '../../_shared/componentes/retroalimentacion/estado-vacio.component';
 import {NavigationService} from '../../_services/navigation-store';
-import {Reserva} from '../../model';
+import {LibroService} from '../../_services/libro.service';
+import {ReservaService} from '../../_services/reserva.service';
+import {StorageService} from '../../_services/storage.service';
+import {Ejemplar} from '../../model';
 
 @Component({
   selector: 'app-realizar-reserva',
   standalone: true,
   imports: [HeaderComponent, FooterComponent, TarjetaComponent, BotonComponent,
     BotonContornoComponent, TextoNormalComponent, TextoPequenoComponent, TextTituloComponent,
-    PilaVerticalComponent, PilaHorizontalComponent, AlertaComponent, FormsModule],
+    AlertaComponent, SelectorComponent,
+    EstadoVacioComponent, FormsModule, DatePipe],
   template: `
     <div class="min-h-screen flex flex-col bg-amber-50/30">
       <app-header></app-header>
@@ -33,11 +38,20 @@ import {Reserva} from '../../model';
           ← Volver al libro
         </button>
 
-        @if (libro) {
+        @if (error) {
+          <app-alerta tipo="error" [mensaje]="error"/>
+        }
+
+        @if (cargando) {
+          <div class="text-center py-16">
+            <texto-normal>Cargando libro...</texto-normal>
+          </div>
+        } @else if (libro) {
           <div class="flex flex-col gap-6">
 
             <texto-titulo>Realizar Reserva</texto-titulo>
-            <texto-normal>Completa el formulario para reservar este libro.</texto-normal>
+            <texto-normal>Selecciona un ejemplar disponible para reservar este libro.</texto-normal>
+
             <app-tarjeta titulo="Libro seleccionado">
               <div class="flex flex-col sm:flex-row gap-6">
 
@@ -65,9 +79,9 @@ import {Reserva} from '../../model';
 
                   <texto-pequeno>{{ libro.editorial }} · {{ libro.anioPublicacion }}</texto-pequeno>
 
-                  @if (libro.ejemplaresDisponibles > 0) {
+                  @if (ejemplaresDisponibles.length > 0) {
                     <span class="text-sm font-medium text-green-700">
-                      {{ libro.ejemplaresDisponibles }} de {{ libro.ejemplaresTotal }} disponibles
+                      {{ ejemplaresDisponibles.length }} ejemplar(es) disponible(s)
                     </span>
                   } @else {
                     <span class="text-sm font-medium text-red-600">Sin ejemplares disponibles</span>
@@ -80,58 +94,100 @@ import {Reserva} from '../../model';
               <app-alerta tipo="exito" mensaje="Reserva creada correctamente. Puedes verla en Mis Reservas."/>
             }
 
-            @if (error) {
-              <app-alerta tipo="error" [mensaje]="error"/>
+            @if (!exito) {
+              <app-tarjeta titulo="Datos de la reserva">
+                <div class="flex flex-col gap-6">
+
+                  @if (ejemplaresDisponibles.length > 0) {
+                    <app-selector
+                      etiqueta="Ejemplar"
+                      id="ejemplar"
+                      [opciones]="opcionesEjemplares"
+                      [valor]="ejemplarSeleccionadoId"
+                      (valorCambio)="onEjemplarCambio($event)"
+                      placeholder="Selecciona un ejemplar..."
+                    />
+
+                    <!-- Aviso de límite según rol -->
+                    <div class="flex items-start gap-2 p-3 rounded-lg bg-amber-100 border border-amber-300 text-sm text-amber-800">
+                      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                      <span>
+                        Como <strong>{{ rolUsuario || 'usuario' }}</strong>, puedes reservar por hasta <strong>{{ rolUsuario === 'estudiante' ? 4 : 14 }} días</strong>.
+                      </span>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                      <label for="fecha-expiracion" class="text-sm font-medium text-gray-700">
+                        Fecha de expiración <span class="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="fecha-expiracion"
+                        type="date"
+                        [ngModel]="fechaExpiracion"
+                        (ngModelChange)="onFechaCambio($event)"
+                        [min]="fechaMinima"
+                        [max]="fechaMaxima"
+                        class="w-full px-3 py-2 border rounded-lg text-sm transition-colors duration-150
+                               focus:outline-none focus:ring-2 focus:ring-offset-0
+                               focus:border-amber-500 focus:ring-amber-200 border-gray-300"
+                      />
+                      <span class="text-xs text-gray-400 ml-1">
+                        La reserva vence automáticamente en esta fecha si no se completa. {{ textoLimiteDias }}.
+                      </span>
+                    </div>
+
+                    @if (ejemplarSeleccionado) {
+                      <div class="bg-stone-50 rounded-lg border border-stone-200 p-4">
+                        <div class="flex flex-col gap-1">
+                          <span class="text-sm font-medium text-stone-700">Resumen</span>
+                          <div class="flex justify-between text-sm text-stone-600">
+                            <span>Código de barras</span>
+                            <span class="font-mono">{{ ejemplarSeleccionado.codigoBarras }}</span>
+                          </div>
+                          <div class="flex justify-between text-sm text-stone-600">
+                            <span>Ubicación</span>
+                            <span>{{ ejemplarSeleccionado.ubicacion ?? '—' }}</span>
+                          </div>
+                          @if (fechaExpiracion) {
+                            <div class="flex justify-between text-sm text-stone-600">
+                              <span>Expira el</span>
+                              <span>{{ fechaExpiracion | date: 'dd/MM/yyyy' }}</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <div class="flex flex-col sm:flex-row gap-4">
+                      <app-boton
+                        etiqueta="Confirmar Reserva"
+                        tamanio="md"
+                        [anchoCompleto]="false"
+                        [deshabilitado]="!formularioValido"
+                        [cargando]="confirmando"
+                        (presionado)="confirmarReserva()"/>
+                      <app-boton-contorno
+                        etiqueta="Cancelar"
+                        tamanio="md"
+                        [anchoCompleto]="false"
+                        (presionado)="volver()"/>
+                    </div>
+                  } @else {
+                    <app-estado-vacio
+                      titulo="Sin ejemplares disponibles"
+                      descripcion="Todos los ejemplares de este libro están prestados o en mantenimiento."/>
+                    <app-boton
+                      etiqueta="Volver al catálogo"
+                      tamanio="sm"
+                      (presionado)="volver()"/>
+                  }
+                </div>
+              </app-tarjeta>
             }
-
-            <app-tarjeta titulo="Datos de la reserva">
-              <div class="flex flex-col gap-6">
-                <div class="flex flex-col gap-1">
-                  <label for="fecha-expiracion" class="text-sm font-medium text-gray-700">
-                    Fecha de expiración <span class="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="fecha-expiracion"
-                    type="date"
-                    [ngModel]="fechaExpiracion"
-                    (ngModelChange)="onFechaCambio($event)"
-                    [min]="fechaMinima"
-                    class="w-full px-3 py-2 border rounded-lg text-sm transition-colors duration-150
-                           focus:outline-none focus:ring-2 focus:ring-offset-0
-                           focus:border-amber-500 focus:ring-amber-200 border-gray-300"
-                  />
-                  <span class="text-xs text-gray-400 ml-1">
-                    La reserva vence automáticamente en esta fecha si no se completa.
-                  </span>
-                </div>
-
-                <div class="flex flex-col gap-1">
-                  <label for="notas" class="text-sm font-medium text-gray-700">Notas (opcional)</label>
-                  <textarea
-                    id="notas"
-                    [(ngModel)]="notas"
-                    rows="3"
-                    placeholder="Indica alguna preferencia o comentario adicional..."
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none
-                           focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-500
-                           transition-colors duration-150"></textarea>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-4">
-                  <app-boton
-                    etiqueta="Confirmar Reserva"
-                    tamanio="md"
-                    [anchoCompleto]="false"
-                    [deshabilitado]="!formularioValido"
-                    (presionado)="confirmarReserva()"/>
-                  <app-boton-contorno
-                    etiqueta="Cancelar"
-                    tamanio="md"
-                    [anchoCompleto]="false"
-                    (presionado)="volver()"/>
-                </div>
-              </div>
-            </app-tarjeta>
 
           </div>
         } @else {
@@ -152,18 +208,91 @@ import {Reserva} from '../../model';
 })
 export class RealizarReservaComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly navigationService = inject(NavigationService);
+  private readonly libroService = inject(LibroService);
+  private readonly reservaService = inject(ReservaService);
+  private readonly storageService = inject(StorageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   errorImagen = false;
   exito = false;
   error: string = '';
   fechaExpiracion: string = '';
-  notas: string = '';
+  ejemplarSeleccionadoId: string = '';
+  cargando: boolean = false;
+  confirmando: boolean = false;
+  libro: any = null;
+  rolUsuario: string = '';
 
   ngOnInit(): void {
-    const id = this.navigationService.store.getState().libroSeleccionadoId;
-    if (!id) {
+    const id = this.route.snapshot.paramMap.get('id')
+      ?? this.navigationService.store.getState().libroSeleccionadoId;
+
+    console.log('[RealizarReserva] ID obtenido:', id);
+
+    // Obtener el rol del usuario para la validación de fecha
+    this.rolUsuario = this.storageService.getRol()?.toLowerCase() ?? '';
+
+    if (id) {
+      this.navigationService.store.getState().seleccionarLibro(id);
+      this.cargarLibro(id);
     }
+  }
+
+  cargarLibro(id: string): void {
+    console.log('[RealizarReserva] Cargando libro:', id);
+    this.cargando = true;
+    this.libroService.obtener(id).subscribe({
+      next: (data: any) => {
+        console.log('[RealizarReserva] Libro recibido:', data);
+        const libro = data?.data ?? data;
+        this.libro = this.mapearLibro(libro);
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[RealizarReserva] Error al cargar libro:', err);
+        this.error = 'No se pudo cargar la información del libro.';
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private mapearLibro(l: any): any {
+    const ejemplares: any[] = Array.isArray(l.ejemplares) ? l.ejemplares : [];
+    const recursos: any[] = Array.isArray(l.recursosDigitales) ? l.recursosDigitales : [];
+    return {
+      ...l,
+      foto: l.fotoUrl ?? l.foto ?? null,
+      ejemplaresTotal: ejemplares.length,
+      ejemplaresDisponibles: ejemplares.filter((e: any) => e.estado === 'disponible').length,
+      autores: Array.isArray(l.autores)
+        ? l.autores.map((a: any) => a.autor ? `${a.autor.nombre ?? ''} ${a.autor.apellidos ?? ''}`.trim() : String(a))
+        : [],
+      categorias: Array.isArray(l.categorias)
+        ? l.categorias.map((c: any) => c.categoria?.nombre ?? String(c))
+        : [],
+      editorial: l.editorial?.nombre ?? l.editorial ?? '',
+      archivosDigitales: recursos.map((r: any) => r.formato ?? r.tipo ?? 'pdf').filter(Boolean),
+      _ejemplares: ejemplares,
+    };
+  }
+
+  get ejemplaresDisponibles(): Ejemplar[] {
+    if (!this.libro?._ejemplares) return [];
+    return this.libro._ejemplares.filter((e: any) => e.estado === 'disponible');
+  }
+
+  get opcionesEjemplares(): Array<{ etiqueta: string; valor: string }> {
+    return this.ejemplaresDisponibles.map(e => ({
+      etiqueta: `${e.codigoBarras} — ${e.ubicacion ?? 'Sin ubicación'}`,
+      valor: e.id,
+    }));
+  }
+  get ejemplarSeleccionado(): Ejemplar | undefined {
+    return this.ejemplaresDisponibles.find(e => e.id === this.ejemplarSeleccionadoId);
   }
 
   get fechaMinima(): string {
@@ -172,95 +301,88 @@ export class RealizarReservaComponent implements OnInit {
     return maniana.toISOString().split('T')[0];
   }
 
+  get fechaMaxima(): string {
+    const hoy = new Date();
+    const diasMaximos = this.rolUsuario === 'estudiante' ? 4 : 14;
+    hoy.setDate(hoy.getDate() + diasMaximos);
+    return hoy.toISOString().split('T')[0];
+  }
+
+  /** Texto descriptivo del límite de días según el rol */
+  get textoLimiteDias(): string {
+    const dias = this.rolUsuario === 'estudiante' ? 4 : 14;
+    return `máximo ${dias} días (${this.rolUsuario || 'usuario'})`;
+  }
+
   get formularioValido(): boolean {
-    return !!this.fechaExpiracion && !this.exito;
+    return !!this.fechaExpiracion && !!this.ejemplarSeleccionadoId && !this.exito && !this.confirmando;
+  }
+
+  onEjemplarCambio(valor: string): void {
+    this.ejemplarSeleccionadoId = valor;
   }
 
   onFechaCambio(valor: string): void {
     this.fechaExpiracion = valor;
+    // Validación en tiempo real: si la fecha supera el máximo, mostrar error
+    if (valor) {
+      const fechaSel = new Date(valor);
+      const fechaMax = new Date(this.fechaMaxima);
+      if (fechaSel > fechaMax) {
+        const dias = this.rolUsuario === 'estudiante' ? 4 : 14;
+        this.error = `Como ${this.rolUsuario}, solo puedes reservar hasta ${dias} días. Selecciona una fecha anterior.`;
+      } else {
+        this.error = '';
+      }
+    }
   }
 
   confirmarReserva(): void {
-    if (!this.libro || !this.fechaExpiracion) {
+    if (!this.libro || !this.ejemplarSeleccionado) {
+      this.error = 'Debes seleccionar un ejemplar disponible.';
+      return;
+    }
+
+    if (!this.fechaExpiracion) {
       this.error = 'La fecha de expiración es obligatoria.';
       return;
     }
 
-    const nuevaReserva: Reserva = {
-      id: crypto.randomUUID(),
-      usuarioId: 'usuario-actual',
-      libroId: this.libro.id,
-      fechaExpiracion: new Date(this.fechaExpiracion).toISOString(),
-      estado: 'pendiente',
-      creadoEn: new Date().toISOString(),
-    };
+    // Validar fecha máxima según rol
+    const fechaSel = new Date(this.fechaExpiracion);
+    const fechaMax = new Date(this.fechaMaxima);
+    if (fechaSel > fechaMax) {
+      const dias = this.rolUsuario === 'estudiante' ? 4 : 14;
+      this.error = `Como ${this.rolUsuario}, solo puedes reservar hasta ${dias} días.`;
+      return;
+    }
 
-    this.navigationService.store.getState().seleccionarReserva(nuevaReserva.id);
-
-    const reservasGuardadas = JSON.parse(localStorage.getItem('reservas') ?? '[]');
-    reservasGuardadas.push(nuevaReserva);
-    localStorage.setItem('reservas', JSON.stringify(reservasGuardadas));
-
-    this.exito = true;
+    this.confirmando = true;
     this.error = '';
+
+    this.reservaService.crear({
+      libroId: this.libro.id,
+      ejemplarId: this.ejemplarSeleccionado.id,
+      fechaExpiracion: new Date(this.fechaExpiracion).toISOString(),
+    }).subscribe({
+      next: (res: any) => {
+        const creada = res?.data ?? res;
+        this.navigationService.store.getState().seleccionarReserva(creada.id);
+        this.exito = true;
+        this.confirmando = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al crear reserva:', err.message);
+        this.error = err?.error?.mensaje ?? 'Error al registrar la reserva. Intenta de nuevo.';
+        this.confirmando = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   volver(): void {
     const id = this.navigationService.store.getState().libroSeleccionadoId;
     this.router.navigate(['/catalogo', id]);
-  }
-
-  libros = [
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-      titulo: 'Cien Años de Soledad',
-      isbn: '978-0307474728', anioPublicacion: 1967, idioma: 'Español',
-      descripcion: 'La historia de la familia Buendía a lo largo de varias generaciones en Macondo.',
-      editorial: 'Editorial Sudamericana', autores: ['Gabriel García Márquez'],
-      categorias: ['Literatura', 'Realismo mágico'], ejemplaresDisponibles: 3, ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780307474728-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-222222222222',
-      titulo: 'Clean Code', isbn: '978-0132350884', anioPublicacion: 2008, idioma: 'Inglés',
-      descripcion: 'Una guía de buenas prácticas para escribir código limpio y mantenible.',
-      editorial: 'Prentice Hall', autores: ['Robert C. Martin'],
-      categorias: ['Ingeniería de Software', 'Tecnología'], ejemplaresDisponibles: 0, ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780132350884-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-      titulo: 'Don Quijote de la Mancha', isbn: '978-8420412146', anioPublicacion: 1605, idioma: 'Español',
-      descripcion: 'Las aventuras de un hidalgo que enloquece leyendo novelas de caballería.',
-      editorial: 'Editorial Cátedra', autores: ['Miguel de Cervantes'],
-      categorias: ['Literatura', 'Clásicos'], ejemplaresDisponibles: 2, ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788420412146-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444',
-      titulo: 'Breve Historia del Tiempo', isbn: '978-0553380163', anioPublicacion: 1988, idioma: 'Español',
-      descripcion: 'Una introducción accesible a la cosmología y la física moderna.',
-      editorial: 'Bantam Books', autores: ['Stephen Hawking'],
-      categorias: ['Ciencia', 'Física'], ejemplaresDisponibles: 1, ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780553380163-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-      titulo: 'Introducción a los Algoritmos', isbn: '978-0262033848', anioPublicacion: 2009, idioma: 'Inglés',
-      descripcion: 'Texto de referencia sobre algoritmos y estructuras de datos.',
-      editorial: 'MIT Press', autores: ['Thomas H. Cormen', 'Charles E. Leiserson'],
-      categorias: ['Ingeniería de Software', 'Matemáticas'], ejemplaresDisponibles: 4, ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780262033848-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-  ];
-
-  get libro() {
-    const id = this.navigationService.store.getState().libroSeleccionadoId;
-    return this.libros.find(l => l.id === id) ?? null;
   }
 }

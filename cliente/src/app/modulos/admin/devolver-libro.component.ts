@@ -1,5 +1,5 @@
-import {Component, inject, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
+import {Router, ActivatedRoute} from '@angular/router';
 import {DatePipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {SidebarComponent} from '../../_shared/componentes/navegacion/sidebar.component';
@@ -14,8 +14,8 @@ import {TextTituloComponent} from '../../_shared/componentes/texto/text-titulo.c
 import {InsigniaComponent} from '../../_shared/componentes/datos/insignia.component';
 import {AvatarComponent} from '../../_shared/componentes/datos/avatar.component';
 import {AlertaComponent} from '../../_shared/componentes/retroalimentacion/alerta.component';
-import {NavigationService} from '../../_services/navigation-store';
-import {Prestamo, Ejemplar, Usuario, Multa} from '../../model';
+import {PrestamoService} from '../../_services/prestamo.service';
+import {ConfiguracionMultaService} from '../../_services/configuracion-multa.service';
 
 @Component({
   selector: 'app-devolver-libro',
@@ -104,7 +104,6 @@ import {Prestamo, Ejemplar, Usuario, Multa} from '../../model';
                 @if (usuario) {
                   <app-tarjeta titulo="Usuario" class="w-full">
                     <div class="flex items-center gap-4">
-                      <app-avatar [nombre]="usuario.nombre + ' ' + usuario.apellidos" tamanio="lg"/>
                       <div>
                         <p class="font-semibold text-stone-800">{{ usuario.nombre }} {{ usuario.apellidos }}</p>
                         <texto-pequeno>{{ usuario.dni }} · {{ usuario.correo }}</texto-pequeno>
@@ -167,7 +166,7 @@ import {Prestamo, Ejemplar, Usuario, Multa} from '../../model';
                     @if (diasRetraso === 0) {
                       <div class="bg-green-50 border border-green-200 rounded-lg p-4 w-full">
                         <span class="text-sm font-medium text-green-700">
-                          ✓ Devolución a tiempo. No se genera multa.
+                          El préstamo esta en el tiempo hábil para no generar una multa
                         </span>
                       </div>
                     }
@@ -194,37 +193,69 @@ import {Prestamo, Ejemplar, Usuario, Multa} from '../../model';
 })
 export class DevolverLibroComponent implements OnInit {
   private readonly router = inject(Router);
-  private readonly navigationService = inject(NavigationService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly prestamoService = inject(PrestamoService);
+  private readonly configuracionMultaService = inject(ConfiguracionMultaService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  prestamo: Prestamo | null = null;
-  ejemplar: Ejemplar | null = null;
-  usuario: Usuario | null = null;
+  prestamo: any = null;
+  ejemplar: any = null;
+  usuario: any = null;
   libro: any = null;
 
   fechaDevolucion: string = '';
   tarifaDiaria: number = 2.50;
   exito: boolean = false;
   error: string = '';
+  cargando: boolean = false;
 
   ngOnInit(): void {
-    const idPrestamo = this.navigationService.store.getState().prestamoSeleccionadoId;
-    if (idPrestamo) {
-      this.cargarDatos(idPrestamo);
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.cargarDatos(id);
     }
   }
 
-  cargarDatos(idPrestamo: string): void {
-    this.prestamo = this.prestamosHardcoded.find(p => p.id === idPrestamo) ?? null;
-    if (!this.prestamo) return;
+  private cargarDatos(idPrestamo: string): void {
+    this.cargando = true;
+    this.prestamoService.obtener(idPrestamo).subscribe({
+      next: (res: any) => {
+        const p = res?.data ?? res;
 
-    this.ejemplar = this.ejemplaresHardcoded.find(e => e.id === this.prestamo!.ejemplarId) ?? null;
-    this.usuario = this.usuariosHardcoded.find(u => u.id === this.prestamo!.usuarioId) ?? null;
+        this.prestamo = p;
+        this.usuario = p.usuario ?? null;
+        this.ejemplar = p.ejemplar ?? null;
 
-    if (this.ejemplar) {
-      this.libro = this.librosHardcoded.find((l: any) => l.id === this.ejemplar!.libroId) ?? null;
-    }
+        const lib = p.ejemplar?.libro;
+        this.libro = lib ? {
+          titulo: lib.titulo,
+          foto: lib.fotoUrl ?? null,
+          autores: Array.isArray(lib.autores)
+            ? lib.autores.map((a: any) => `${a.autor?.nombre ?? ''} ${a.autor?.apellidos ?? ''}`.trim())
+            : [],
+        } : null;
 
-    this.fechaDevolucion = new Date().toISOString().split('T')[0];
+        this.fechaDevolucion = new Date().toISOString().split('T')[0];
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al cargar préstamo:', err.message);
+        this.error = 'No se pudo cargar el préstamo.';
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+    });
+
+    this.configuracionMultaService.listar().subscribe({
+      next: (res: any) => {
+        const configs = Array.isArray(res) ? res : (res?.data ?? []);
+        if (configs.length > 0) {
+          this.tarifaDiaria = Number(configs[0].tarifaDiaria) || 2.50;
+        }
+      },
+      error: () => { /* mantiene tarifaDiaria por defecto */ },
+    });
   }
 
   get diasRetraso(): number {
@@ -253,61 +284,28 @@ export class DevolverLibroComponent implements OnInit {
   confirmarDevolucion(): void {
     if (!this.prestamo) return;
 
-    const prestamosGuardados = JSON.parse(localStorage.getItem('prestamos') ?? '[]');
-    const idx = prestamosGuardados.findIndex((p: any) => p.id === this.prestamo!.id);
+    const data: any = {
+      estado: 'devuelto',
+      fechaDevolucion: new Date(this.fechaDevolucion).toISOString(),
+    };
 
-    if (idx >= 0) {
-      prestamosGuardados[idx].estado = 'devuelto';
-      prestamosGuardados[idx].fechaDevolucion = new Date(this.fechaDevolucion).toISOString();
-      localStorage.setItem('prestamos', JSON.stringify(prestamosGuardados));
-    }
-    if (this.diasRetraso > 0) {
-      const nuevaMulta: Multa = {
-        id: crypto.randomUUID(),
-        prestamoId: this.prestamo.id,
-        monto: this.multaGenerada,
-        diasMora: this.diasRetraso,
-        estado: 'pendiente',
-        creadoEn: new Date().toISOString(),
-      };
-      this.navigationService.store.getState().seleccionarMulta(nuevaMulta.id);
-
-      const multasGuardadas = JSON.parse(localStorage.getItem('multas') ?? '[]');
-      multasGuardadas.push(nuevaMulta);
-      localStorage.setItem('multas', JSON.stringify(multasGuardadas));
-    }
-
-    this.exito = true;
-    this.error = '';
+    this.prestamoService.actualizar(this.prestamo.id, data).subscribe({
+      next: (res: any) => {
+        const actualizado = res?.data ?? res;
+        this.prestamo = { ...this.prestamo, ...actualizado };
+        this.exito = true;
+        this.error = '';
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al registrar devolución:', err.message);
+        this.error = err?.error?.mensaje ?? 'Error al registrar la devolución.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   volver(): void {
     this.router.navigate(['/admin/prestamos']);
   }
-
-  prestamosHardcoded: Prestamo[] = [
-    {id: 'p-001', usuarioId: 'u-001', ejemplarId: 'e-101', fechaMaxDevolucion: '2026-06-05T00:00:00Z', estado: 'vencido', creadoEn: '2026-05-28T00:00:00Z'},
-    {id: 'p-002', usuarioId: 'u-002', ejemplarId: 'e-301', fechaMaxDevolucion: '2026-06-28T00:00:00Z', estado: 'activo', creadoEn: '2026-06-20T00:00:00Z'},
-    {id: 'p-004', usuarioId: 'u-001', ejemplarId: 'e-501', fechaMaxDevolucion: '2026-06-30T00:00:00Z', estado: 'activo', creadoEn: '2026-06-22T00:00:00Z'},
-    {id: 'p-005', usuarioId: 'u-002', ejemplarId: 'e-401', fechaMaxDevolucion: '2026-06-10T00:00:00Z', estado: 'vencido', creadoEn: '2026-06-01T00:00:00Z'},
-  ];
-
-  ejemplaresHardcoded: Ejemplar[] = [
-    {id: 'e-101', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111', codigoBarras: 'BC-CSA-001', estado: 'prestado', ubicacion: 'Estante A-03', fechaAdquisicion: '2024-01-15', creadoEn: '2024-01-15T00:00:00Z'},
-    {id: 'e-301', libroId: '8f1e2c10-1a2b-4c3d-9e8f-333333333333', codigoBarras: 'BC-DQJ-001', estado: 'prestado', ubicacion: 'Estante B-01', fechaAdquisicion: '2023-09-10', creadoEn: '2023-09-10T00:00:00Z'},
-    {id: 'e-401', libroId: '8f1e2c10-1a2b-4c3d-9e8f-444444444444', codigoBarras: 'BC-BHT-001', estado: 'prestado', ubicacion: 'Estante C-02', fechaAdquisicion: '2025-02-20', creadoEn: '2025-02-20T00:00:00Z'},
-    {id: 'e-501', libroId: '8f1e2c10-1a2b-4c3d-9e8f-555555555555', codigoBarras: 'BC-ITP-001', estado: 'prestado', ubicacion: 'Estante C-05', fechaAdquisicion: '2024-11-01', creadoEn: '2024-11-01T00:00:00Z'},
-  ];
-
-  usuariosHardcoded: Usuario[] = [
-    {id: 'u-001', rolId: 'r-003', nombre: 'Carlos', apellidos: 'Gómez López', dni: '12345678', correo: 'carlos@correo.com', creadoEn: '2025-01-01T00:00:00Z'},
-    {id: 'u-002', rolId: 'r-003', nombre: 'María', apellidos: 'Pérez Ríos', dni: '87654321', correo: 'maria@correo.com', creadoEn: '2025-02-01T00:00:00Z'},
-  ];
-
-  librosHardcoded = [
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111', titulo: 'Cien Años de Soledad', autores: ['Gabriel García Márquez'], foto: 'https://covers.openlibrary.org/b/isbn/9780307474728-M.jpg'},
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333', titulo: 'Don Quijote de la Mancha', autores: ['Miguel de Cervantes'], foto: 'https://covers.openlibrary.org/b/isbn/9788420412146-M.jpg'},
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444', titulo: 'Breve Historia del Tiempo', autores: ['Stephen Hawking'], foto: ''},
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555', titulo: 'Introducción a los Algoritmos', autores: ['Cormen', 'Leiserson'], foto: ''},
-  ];
 }

@@ -1,20 +1,25 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {Router} from '@angular/router';
+import {FormsModule} from '@angular/forms';
 import {HeaderComponent} from '../../_shared/componentes/navegacion/header.component';
 import {FooterComponent} from '../../_shared/componentes/navegacion/footer.component';
 import {TarjetaComponent} from '../../_shared/componentes/datos/tarjeta.component';
 import {BotonComponent} from '../../_shared/componentes/botones/boton.component';
 import {TextoNormalComponent} from '../../_shared/componentes/texto/texto-normal.component';
 import {TextoPequenoComponent} from '../../_shared/componentes/texto/texto-pequeno.component';
-import {EntradaBusquedaComponent} from "../../_shared/componentes/entradas/entrada-busqueda.component";
+import {EntradaComponent} from "../../_shared/componentes/entradas/entrada.component";
 import {NavigationService} from "../../_services/navigation-store";
+import {MapaService} from "../../_services/mapa-store";
+import {LibroService} from "../../_services/libro.service";
+import {FavoritoService} from "../../_services/favorito.service";
+import {FavoritoStoreService} from "../../_services/favorito-store";
 
 
 @Component({
   selector: 'app-catalogo-listado',
   standalone: true,
   imports: [HeaderComponent, FooterComponent, TarjetaComponent, BotonComponent,
-    TextoNormalComponent, TextoPequenoComponent, EntradaBusquedaComponent],
+    TextoNormalComponent, TextoPequenoComponent, EntradaComponent, FormsModule],
   template: `
     <div class="min-h-screen flex flex-col bg-amber-50/30">
       <app-header></app-header>
@@ -22,19 +27,47 @@ import {NavigationService} from "../../_services/navigation-store";
       <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         <div class="flex items-center justify-between gap-4 mb-8">
           <texto-normal>Explora los libros disponibles en la biblioteca.</texto-normal>
-          <app-entrada-busqueda
-            placeholder="Buscar por título o autor..."
-            [valor]="terminoBusqueda"
-            (valorCambio)="onBusquedaCambio($event)"></app-entrada-busqueda>
+          <div class="flex items-center gap-2">
+            <app-entrada
+              placeholder="Describe lo que necesitas..."
+              [valor]="terminoBusqueda"
+              (valorCambio)="onTerminoCambio($event)"></app-entrada>
+            <button type="button"
+              (click)="ejecutarBusqueda()"
+              [disabled]="cargando"
+              title="Buscar"
+              class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+            <button type="button"
+              (click)="irAlMapa()"
+              [disabled]="cargandoGrafo"
+              title="Mapa"
+              class="flex items-center justify-center w-10 h-10 rounded-lg bg-stone-200 text-stone-600 hover:bg-stone-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="12,3 22,21 2,21"/>
+              </svg>
+            </button>
+            <select
+              [(ngModel)]="filtroFavoritos"
+              (change)="irAPagina(1)"
+              class="ml-2 px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-500 transition-colors">
+              <option value="todos">Todos</option>
+              <option value="favoritos">Favoritos</option>
+              <option value="no-favoritos">No favoritos</option>
+            </select>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           @for (libro of librosPaginados; track libro.id) {
             <app-tarjeta>
-              <div class="flex flex-col gap-3">
+              <div class="flex flex-col gap-3 h-full">
 
                 <div
-                  class="aspect-[9/16] w-full max-w-[140px] mx-auto rounded-lg bg-gray-200 overflow-hidden flex items-center justify-center text-gray-400">
+                  class="aspect-[9/16] w-full max-w-[140px] mx-auto rounded-lg bg-gray-200 overflow-hidden flex items-center justify-center text-gray-400 shrink-0">
                   @if (libro.foto && !erroresImagen.has(libro.id)) {
                     <img
                       [alt]="libro.titulo"
@@ -49,42 +82,48 @@ import {NavigationService} from "../../_services/navigation-store";
                   }
                 </div>
 
-                <div>
-                  <p class="font-semibold text-stone-800 leading-snug">{{ libro.titulo }}</p>
-                  <texto-pequeno>{{ libro.autores.join(', ') }}</texto-pequeno>
+                <div class="min-h-0">
+                  <p class="font-semibold text-stone-800 leading-snug line-clamp-2">{{ libro.titulo }}</p>
+                  <texto-pequeno class="line-clamp-1">{{ libro.autores.join(', ') }}</texto-pequeno>
                 </div>
 
-                <texto-pequeno>{{ libro.editorial }} · {{ libro.anioPublicacion }} · {{ libro.idioma }}</texto-pequeno>
+                <texto-pequeno class="line-clamp-1">{{ $any(libro.editorial)?.nombre || libro.editorial }} · {{ libro.anioPublicacion }} · {{ libro.idioma }}</texto-pequeno>
 
-                <div class="flex flex-wrap gap-1.5">
+                <div class="flex flex-wrap gap-1.5 min-h-[1.75rem]">
                   @for (categoria of libro.categorias; track categoria) {
-                    <span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                    <span class="px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-100 line-clamp-1">
             {{ categoria }}
           </span>
                   }
                 </div>
 
                 @if (libro.archivosDigitales.length > 0) {
-                  <div class="flex flex-wrap gap-1.5">
+                  <div class="flex flex-wrap gap-1.5 min-h-[1.75rem]">
                     @for (archivo of libro.archivosDigitales; track archivo) {
                       <span
-                        class="px-2 py-0.5 text-xs rounded-full bg-stone-100 text-stone-600 border border-stone-200 uppercase">
+                        class="px-2 py-0.5 text-xs rounded-full bg-stone-100 text-stone-600 border border-stone-200 uppercase line-clamp-1">
             {{ archivo }}
           </span>
                     }
                   </div>
-                }
-
-                @if (libro.ejemplaresDisponibles > 0) {
-                  <span class="text-xs font-medium text-green-700">
-                    {{ libro.ejemplaresDisponibles }} de {{ libro.ejemplaresTotal }} disponibles
-                  </span>
                 } @else {
-                  <span class="text-xs font-medium text-red-600">Sin ejemplares disponibles</span>
+                  <div class="min-h-[1.75rem]"></div>
                 }
 
-                <app-boton etiqueta="Ver detalle" tamanio="sm" [anchoCompleto]="true"
-                           (presionado)="onVerDetalle(libro)"/>
+                <div class="min-h-[1.25rem]">
+                  @if (libro.ejemplaresDisponibles > 0) {
+                    <span class="text-xs font-medium text-green-700">
+                      {{ libro.ejemplaresDisponibles }} de {{ libro.ejemplaresTotal }} disponibles
+                    </span>
+                  } @else {
+                    <span class="text-xs font-medium text-red-600">Sin ejemplares disponibles</span>
+                  }
+                </div>
+
+                <div class="mt-auto pt-1">
+                  <app-boton etiqueta="Ver detalle" tamanio="sm" [anchoCompleto]="true"
+                             (presionado)="onVerDetalle(libro)"/>
+                </div>
               </div>
             </app-tarjeta>
           }
@@ -134,11 +173,72 @@ import {NavigationService} from "../../_services/navigation-store";
     </div>
   `,
 })
-export class CatalogoListadoComponent {
+export class CatalogoListadoComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly navigationService = inject(NavigationService);
+  private readonly libroService = inject(LibroService);
+  private readonly mapaService = inject(MapaService);
+  private readonly favoritoService = inject(FavoritoService);
+  private readonly favoritoStoreService = inject(FavoritoStoreService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
+  cargando: boolean = false;
+  cargandoGrafo: boolean = false;
   erroresImagen = new Set<string>();
+  filtroFavoritos: 'todos' | 'favoritos' | 'no-favoritos' = 'todos';
+
+  ngOnInit(): void {
+    this.cargarLibros();
+    this.cargarFavoritos();
+  }
+
+  cargarFavoritos(): void {
+    this.favoritoService.misFavoritos().subscribe({
+      next: (data: any) => {
+        const favoritos = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        this.favoritoStoreService.store.getState().setFavoritosIds(favoritos.map((f: any) => f.libroId));
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al cargar favoritos:', err.message);
+      },
+    });
+  }
+
+  cargarLibros(): void {
+    this.cargando = true;
+    this.libroService.listar().subscribe({
+      next: (data: any) => {
+        const listado = Array.isArray(data) ? data : (data?.data ?? data?.libros ?? []);
+        this.libros = listado.map((l: any) => this.mapearLibro(l));
+        this.cdr.detectChanges();
+        this.cargando = false;
+      },
+      error: (err: any) => {
+        console.error('Error al cargar libros:', err.message);
+        this.cargando = false;
+      },
+    });
+  }
+
+  private mapearLibro(l: any): any {
+    const ejemplares: any[] = Array.isArray(l.ejemplares) ? l.ejemplares : [];
+    const recursos: any[] = Array.isArray(l.recursosDigitales) ? l.recursosDigitales : [];
+    return {
+      ...l,
+      foto: l.fotoUrl ?? l.foto ?? null,
+      ejemplaresTotal: ejemplares.length,
+      ejemplaresDisponibles: ejemplares.filter(e => e.estado === 'disponible').length,
+      autores: Array.isArray(l.autores)
+        ? l.autores.map((a: any) => a.autor ? `${a.autor.nombre ?? ''} ${a.autor.apellidos ?? ''}`.trim() : String(a))
+        : [],
+      categorias: Array.isArray(l.categorias)
+        ? l.categorias.map((c: any) => c.categoria?.nombre ?? String(c))
+        : [],
+      editorial: l.editorial?.nombre ?? l.editorial ?? '',
+      archivosDigitales: recursos.map(r => r.formato ?? r.tipo ?? 'pdf').filter(Boolean),
+    };
+  }
 
   onVerDetalle(libro:any): void {
     this.navigationService.store.getState().seleccionarLibro(libro.id);
@@ -149,22 +249,63 @@ export class CatalogoListadoComponent {
     this.erroresImagen.add(id);
   }
 
+  // --- Búsqueda vía API ---
   terminoBusqueda: string = '';
 
-  onBusquedaCambio(valor: string): void {
+  onTerminoCambio(valor: string): void {
     this.terminoBusqueda = valor;
-    this.paginaActual = 1;
+  }
+
+  ejecutarBusqueda(): void {
+    const termino = this.terminoBusqueda.trim();
+    if (!termino) {
+      this.cargarLibros();
+      return;
+    }
+    this.cargando = true;
+    this.libroService.buscar(termino).subscribe({
+      next: (data: any) => {
+        const listado = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        this.libros = listado.map((l: any) => this.mapearLibro(l));
+        this.paginaActual = 1;
+        this.cdr.detectChanges();
+        this.cargando = false;
+      },
+      error: (err: any) => {
+        console.error('Error al buscar libros:', err.message);
+        this.cargando = false;
+      },
+    });
+  }
+
+  irAlMapa(): void {
+    const termino = this.terminoBusqueda.trim() || '';
+    this.cargandoGrafo = true;
+    this.libroService.solicitarGrafo(termino).subscribe({
+      next: (res: any) => {
+        const { nodes, edges } = res;
+        this.mapaService.store.getState().setTermino(termino);
+        this.mapaService.store.getState().setNodos(nodes ?? []);
+        this.mapaService.store.getState().setEdges(edges ?? []);
+        this.cargandoGrafo = false;
+        this.router.navigate(['/mapa']);
+      },
+      error: (err: any) => {
+        console.error('Error al solicitar grafo:', err.message);
+        this.cargandoGrafo = false;
+      },
+    });
   }
 
   get librosFiltrados() {
-    const termino = this.terminoBusqueda.trim().toLowerCase();
-    if (!termino) {
-      return this.libros;
+    const favoritosIds = this.favoritoStoreService.store.getState().favoritosIds;
+    if (this.filtroFavoritos === 'favoritos') {
+      return this.libros.filter(l => favoritosIds.includes(l.id));
     }
-    return this.libros.filter(libro =>
-      libro.titulo.toLowerCase().includes(termino) ||
-      libro.autores.some(autor => autor.toLowerCase().includes(termino))
-    );
+    if (this.filtroFavoritos === 'no-favoritos') {
+      return this.libros.filter(l => !favoritosIds.includes(l.id));
+    }
+    return this.libros;
   }
 
   paginaActual: number = 1;
@@ -190,636 +331,5 @@ export class CatalogoListadoComponent {
     this.paginaActual = pagina;
   }
 
-  libros = [
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-      titulo: 'Cien Años de Soledad',
-      isbn: '978-0307474728',
-      anioPublicacion: 1967,
-      idioma: 'Español',
-      descripcion: 'La historia de la familia Buendía a lo largo de varias generaciones en Macondo.',
-      editorial: 'Editorial Sudamericana',
-      autores: ['Gabriel García Márquez'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780307474728-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-222222222222',
-      titulo: 'Clean Code',
-      isbn: '978-0132350884',
-      anioPublicacion: 2008,
-      idioma: 'Inglés',
-      descripcion: 'Una guía de buenas prácticas para escribir código limpio y mantenible.',
-      editorial: 'Prentice Hall',
-      autores: ['Robert C. Martin'],
-      categorias: ['Ingeniería de Software', 'Tecnología'],
-      ejemplaresDisponibles: 0,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780132350884-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-      titulo: 'Don Quijote de la Mancha',
-      isbn: '978-8420412146',
-      anioPublicacion: 1605,
-      idioma: 'Español',
-      descripcion: 'Las aventuras de un hidalgo que enloquece leyendo novelas de caballería.',
-      editorial: 'Editorial Cátedra',
-      autores: ['Miguel de Cervantes'],
-      categorias: ['Literatura', 'Clásicos'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788420412146-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444',
-      titulo: 'Breve Historia del Tiempo',
-      isbn: '978-0553380163',
-      anioPublicacion: 1988,
-      idioma: 'Español',
-      descripcion: 'Una introducción accesible a la cosmología y la física moderna.',
-      editorial: 'Bantam Books',
-      autores: ['Stephen Hawking'],
-      categorias: ['Ciencia', 'Física'],
-      ejemplaresDisponibles: 1,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780553380163-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-      titulo: 'Introducción a los Algoritmos',
-      isbn: '978-0262033848',
-      anioPublicacion: 2009,
-      idioma: 'Inglés',
-      descripcion: 'Texto de referencia sobre algoritmos y estructuras de datos.',
-      editorial: 'MIT Press',
-      autores: ['Thomas H. Cormen', 'Charles E. Leiserson'],
-      categorias: ['Ingeniería de Software', 'Matemáticas'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780262033848-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-666666666666',
-      titulo: 'La Casa de los Espíritus',
-      isbn: '978-0525433457',
-      anioPublicacion: 1982,
-      idioma: 'Español',
-      descripcion: 'Una saga familiar marcada por el amor, la política y lo sobrenatural en Chile.',
-      editorial: 'Plaza & Janés',
-      autores: ['Isabel Allende'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780525433457-M.jpg',
-      archivosDigitales: ['mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-777777777777',
-      titulo: 'El Principito',
-      isbn: '978-0156012195',
-      anioPublicacion: 1943,
-      idioma: 'Español',
-      descripcion: 'Un piloto se encuentra con un pequeño príncipe en el desierto del Sahara.',
-      editorial: 'Reynal & Hitchcock',
-      autores: ['Antoine de Saint-Exupéry'],
-      categorias: ['Literatura', 'Infantil', 'Filosofía'],
-      ejemplaresDisponibles: 5,
-      ejemplaresTotal: 8,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780156012195-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-888888888888',
-      titulo: '1984',
-      isbn: '978-0451524935',
-      anioPublicacion: 1949,
-      idioma: 'Inglés',
-      descripcion: 'Una distopía sobre un estado totalitario que vigila a sus ciudadanos.',
-      editorial: 'Secker & Warburg',
-      autores: ['George Orwell'],
-      categorias: ['Literatura', 'Ciencia Ficción', 'Política'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780451524935-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-999999999999',
-      titulo: 'El Alquimista',
-      isbn: '978-0062502174',
-      anioPublicacion: 1988,
-      idioma: 'Español',
-      descripcion: 'Un joven pastor andaluz viaja en busca de su leyenda personal.',
-      editorial: 'Editorial Planeta',
-      autores: ['Paulo Coelho'],
-      categorias: ['Literatura', 'Filosofía', 'Aventura'],
-      ejemplaresDisponibles: 6,
-      ejemplaresTotal: 7,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780062502174-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-aaaaaaaaaaaa',
-      titulo: 'El Arte de la Guerra',
-      isbn: '978-1590302259',
-      anioPublicacion: 500,
-      idioma: 'Chino',
-      descripcion: 'Un tratado militar antiguo sobre estrategia y tácticas.',
-      editorial: 'Shambhala',
-      autores: ['Sun Tzu'],
-      categorias: ['Filosofía', 'Historia', 'Estrategia'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9781590302259-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-bbbbbbbbbbbb',
-      titulo: 'El Hobbit',
-      isbn: '978-0547928227',
-      anioPublicacion: 1937,
-      idioma: 'Inglés',
-      descripcion: 'La aventura de Bilbo Bolsón para recuperar el tesoro de los enanos.',
-      editorial: 'George Allen & Unwin',
-      autores: ['J.R.R. Tolkien'],
-      categorias: ['Literatura', 'Fantasía', 'Aventura'],
-      ejemplaresDisponibles: 7,
-      ejemplaresTotal: 10,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780547928227-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-cccccccccccc',
-      titulo: 'El Código Da Vinci',
-      isbn: '978-0385504201',
-      anioPublicacion: 2003,
-      idioma: 'Inglés',
-      descripcion: 'Un simbólogo descubre un secreto oculto en las obras de Leonardo da Vinci.',
-      editorial: 'Doubleday',
-      autores: ['Dan Brown'],
-      categorias: ['Literatura', 'Misterio', 'Suspenso'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780385504201-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-dddddddddddd',
-      titulo: 'El Gran Gatsby',
-      isbn: '978-0743273565',
-      anioPublicacion: 1925,
-      idioma: 'Inglés',
-      descripcion: 'La trágica historia del millonario Jay Gatsby en la Era del Jazz.',
-      editorial: 'Charles Scribner\'s Sons',
-      autores: ['F. Scott Fitzgerald'],
-      categorias: ['Literatura', 'Clásicos', 'Romance'],
-      ejemplaresDisponibles: 1,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780743273565-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-eeeeeeeeeeee',
-      titulo: 'Matar a un Ruiseñor',
-      isbn: '978-0061120084',
-      anioPublicacion: 1960,
-      idioma: 'Inglés',
-      descripcion: 'Un abogado defiende a un hombre negro acusado de violación en el sur de EE.UU.',
-      editorial: 'J.B. Lippincott & Co.',
-      autores: ['Harper Lee'],
-      categorias: ['Literatura', 'Clásicos', 'Justicia Social'],
-      ejemplaresDisponibles: 8,
-      ejemplaresTotal: 10,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780061120084-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-ffffffffffff',
-      titulo: 'La Metamorfosis',
-      isbn: '978-0143105244',
-      anioPublicacion: 1915,
-      idioma: 'Alemán',
-      descripcion: 'Gregor Samsa se despierta un día transformado en un insecto monstruoso.',
-      editorial: 'Kurt Wolff Verlag',
-      autores: ['Franz Kafka'],
-      categorias: ['Literatura', 'Filosofía', 'Existencialismo'],
-      ejemplaresDisponibles: 5,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780143105244-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111112',
-      titulo: 'El Señor de los Anillos: La Comunidad del Anillo',
-      isbn: '978-0547928210',
-      anioPublicacion: 1954,
-      idioma: 'Inglés',
-      descripcion: 'Frodo Bolsón debe destruir el Anillo Único en el Monte del Destino.',
-      editorial: 'George Allen & Unwin',
-      autores: ['J.R.R. Tolkien'],
-      categorias: ['Literatura', 'Fantasía', 'Aventura'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780547928210-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111113',
-      titulo: 'El Psicoanalista',
-      isbn: '978-8498381504',
-      anioPublicacion: 2002,
-      idioma: 'Español',
-      descripcion: 'Un psicoanalista recibe una amenaza de muerte y debe resolver un misterio.',
-      editorial: 'Planeta',
-      autores: ['John Katzenbach'],
-      categorias: ['Literatura', 'Misterio', 'Psicología'],
-      ejemplaresDisponibles: 0,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788498381504-M.jpg',
-      archivosDigitales: ['mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111114',
-      titulo: 'El Túnel',
-      isbn: '978-8420421278',
-      anioPublicacion: 1948,
-      idioma: 'Español',
-      descripcion: 'Un pintor obsesionado confiesa el asesinato de su amada.',
-      editorial: 'Editorial Sudamericana',
-      autores: ['Ernesto Sabato'],
-      categorias: ['Literatura', 'Psicología', 'Existencialismo'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788420421278-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111115',
-      titulo: 'La Sombra del Viento',
-      isbn: '978-8408169776',
-      anioPublicacion: 2001,
-      idioma: 'Español',
-      descripcion: 'Un joven descubre un libro maldito en el Cementerio de los Libros Olvidados.',
-      editorial: 'Planeta',
-      autores: ['Carlos Ruiz Zafón'],
-      categorias: ['Literatura', 'Misterio', 'Suspenso'],
-      ejemplaresDisponibles: 6,
-      ejemplaresTotal: 8,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788408169776-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111116',
-      titulo: 'El Perfume',
-      isbn: '978-8435070463',
-      anioPublicacion: 1985,
-      idioma: 'Alemán',
-      descripcion: 'Un asesino en serie obsesionado con los olores en la Francia del siglo XVIII.',
-      editorial: 'Alfaguara',
-      autores: ['Patrick Süskind'],
-      categorias: ['Literatura', 'Misterio', 'Histórica'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788435070463-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111117',
-      titulo: 'Fahrenheit 451',
-      isbn: '978-1451673319',
-      anioPublicacion: 1953,
-      idioma: 'Inglés',
-      descripcion: 'Un bombero que quema libros cuestiona su trabajo en una sociedad totalitaria.',
-      editorial: 'Ballantine Books',
-      autores: ['Ray Bradbury'],
-      categorias: ['Literatura', 'Ciencia Ficción', 'Distopía'],
-      ejemplaresDisponibles: 5,
-      ejemplaresTotal: 7,
-      foto: 'https://covers.openlibrary.org/b/isbn/9781451673319-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111118',
-      titulo: 'El Viejo y el Mar',
-      isbn: '978-0684801223',
-      anioPublicacion: 1952,
-      idioma: 'Inglés',
-      descripcion: 'Un viejo pescador cubano lucha contra un enorme pez en el Golfo de México.',
-      editorial: 'Charles Scribner\'s Sons',
-      autores: ['Ernest Hemingway'],
-      categorias: ['Literatura', 'Clásicos', 'Aventura'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780684801223-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111119',
-      titulo: 'La Divina Comedia',
-      isbn: '978-0141197494',
-      anioPublicacion: 1320,
-      idioma: 'Italiano',
-      descripcion: 'El viaje de Dante a través del Infierno, el Purgatorio y el Paraíso.',
-      editorial: 'Penguin Classics',
-      autores: ['Dante Alighieri'],
-      categorias: ['Literatura', 'Poesía', 'Clásicos'],
-      ejemplaresDisponibles: 1,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780141197494-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111120',
-      titulo: 'El Retrato de Dorian Gray',
-      isbn: '978-0141439572',
-      anioPublicacion: 1890,
-      idioma: 'Inglés',
-      descripcion: 'Un joven permanece joven mientras su retrato envejece con sus pecados.',
-      editorial: 'Lippincott\'s Monthly Magazine',
-      autores: ['Oscar Wilde'],
-      categorias: ['Literatura', 'Filosofía', 'Clásicos'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780141439572-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111121',
-      titulo: 'Crimen y Castigo',
-      isbn: '978-0143058144',
-      anioPublicacion: 1866,
-      idioma: 'Ruso',
-      descripcion: 'Un estudiante comete un asesinato y enfrenta las consecuencias psicológicas.',
-      editorial: 'The Russian Messenger',
-      autores: ['Fyodor Dostoevsky'],
-      categorias: ['Literatura', 'Psicología', 'Filosofía'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780143058144-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111122',
-      titulo: 'El Diario de Ana Frank',
-      isbn: '978-0553577129',
-      anioPublicacion: 1947,
-      idioma: 'Holandés',
-      descripcion: 'El diario de una niña judía escondida durante la ocupación nazi.',
-      editorial: 'Contact Publishing',
-      autores: ['Ana Frank'],
-      categorias: ['Historia', 'Biografía', 'Holocausto'],
-      ejemplaresDisponibles: 7,
-      ejemplaresTotal: 8,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780553577129-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111123',
-      titulo: 'La Biblia',
-      isbn: '978-0521706382',
-      anioPublicacion: -1000,
-      idioma: 'Hebreo',
-      descripcion: 'El texto sagrado del cristianismo y el judaísmo.',
-      editorial: 'Varias editoriales',
-      autores: ['Varios autores'],
-      categorias: ['Religión', 'Historia', 'Filosofía'],
-      ejemplaresDisponibles: 10,
-      ejemplaresTotal: 15,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780521706382-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111124',
-      titulo: 'El Corán',
-      isbn: '978-0199535945',
-      anioPublicacion: 610,
-      idioma: 'Árabe',
-      descripcion: 'El texto sagrado del Islam.',
-      editorial: 'Oxford University Press',
-      autores: ['Mahoma'],
-      categorias: ['Religión', 'Historia', 'Filosofía'],
-      ejemplaresDisponibles: 8,
-      ejemplaresTotal: 10,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780199535945-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111125',
-      titulo: 'Moby Dick',
-      isbn: '978-1503280786',
-      anioPublicacion: 1851,
-      idioma: 'Inglés',
-      descripcion: 'El capitán Ahab obsesivamente persigue a la ballena blanca.',
-      editorial: 'Harper & Brothers',
-      autores: ['Herman Melville'],
-      categorias: ['Literatura', 'Clásicos', 'Aventura'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9781503280786-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111126',
-      titulo: 'Las Aventuras de Sherlock Holmes',
-      isbn: '978-0140621746',
-      anioPublicacion: 1892,
-      idioma: 'Inglés',
-      descripcion: 'Una colección de misterios resueltos por el famoso detective.',
-      editorial: 'George Newnes',
-      autores: ['Arthur Conan Doyle'],
-      categorias: ['Literatura', 'Misterio', 'Detective'],
-      ejemplaresDisponibles: 6,
-      ejemplaresTotal: 8,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140621746-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111127',
-      titulo: 'La Odisea',
-      isbn: '978-0140268860',
-      anioPublicacion: -800,
-      idioma: 'Griego',
-      descripcion: 'El viaje de Odiseo de regreso a casa después de la Guerra de Troya.',
-      editorial: 'Penguin Classics',
-      autores: ['Homero'],
-      categorias: ['Literatura', 'Poesía', 'Clásicos'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140268860-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111128',
-      titulo: 'La Ilíada',
-      isbn: '978-0140445923',
-      anioPublicacion: -750,
-      idioma: 'Griego',
-      descripcion: 'La historia de la Guerra de Troya y la ira de Aquiles.',
-      editorial: 'Penguin Classics',
-      autores: ['Homero'],
-      categorias: ['Literatura', 'Poesía', 'Clásicos'],
-      ejemplaresDisponibles: 5,
-      ejemplaresTotal: 7,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140445923-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111129',
-      titulo: 'La Eneida',
-      isbn: '978-0140445510',
-      anioPublicacion: -29,
-      idioma: 'Latín',
-      descripcion: 'La historia del héroe troyano Eneas y la fundación de Roma.',
-      editorial: 'Penguin Classics',
-      autores: ['Virgilio'],
-      categorias: ['Literatura', 'Poesía', 'Clásicos'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140445510-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111130',
-      titulo: 'El Decamerón',
-      isbn: '978-0140449303',
-      anioPublicacion: 1353,
-      idioma: 'Italiano',
-      descripcion: 'Cien cuentos contados por diez jóvenes que huyen de la peste en Florencia.',
-      editorial: 'Penguin Classics',
-      autores: ['Giovanni Boccaccio'],
-      categorias: ['Literatura', 'Cuentos', 'Clásicos'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140449303-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111131',
-      titulo: 'El Conde de Montecristo',
-      isbn: '978-0140449266',
-      anioPublicacion: 1844,
-      idioma: 'Francés',
-      descripcion: 'Un hombre injustamente encarcelado busca venganza después de escapar.',
-      editorial: 'Penguin Classics',
-      autores: ['Alexandre Dumas'],
-      categorias: ['Literatura', 'Aventura', 'Venganza'],
-      ejemplaresDisponibles: 5,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140449266-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111132',
-      titulo: 'Los Tres Mosqueteros',
-      isbn: '978-0141442343',
-      anioPublicacion: 1844,
-      idioma: 'Francés',
-      descripcion: 'Las aventuras de D\'Artagnan y sus amigos mosqueteros.',
-      editorial: 'Penguin Classics',
-      autores: ['Alexandre Dumas'],
-      categorias: ['Literatura', 'Aventura', 'Histórica'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780141442343-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111133',
-      titulo: 'Anna Karenina',
-      isbn: '978-0143035008',
-      anioPublicacion: 1877,
-      idioma: 'Ruso',
-      descripcion: 'La trágica historia de una mujer que se enamora fuera del matrimonio.',
-      editorial: 'The Russian Messenger',
-      autores: ['León Tolstói'],
-      categorias: ['Literatura', 'Romance', 'Clásicos'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780143035008-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111134',
-      titulo: 'Guerra y Paz',
-      isbn: '978-1400079988',
-      anioPublicacion: 1869,
-      idioma: 'Ruso',
-      descripcion: 'La historia de varias familias rusas durante las guerras napoleónicas.',
-      editorial: 'The Russian Messenger',
-      autores: ['León Tolstói'],
-      categorias: ['Literatura', 'Histórica', 'Clásicos'],
-      ejemplaresDisponibles: 6,
-      ejemplaresTotal: 8,
-      foto: 'https://covers.openlibrary.org/b/isbn/9781400079988-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111135',
-      titulo: 'El Extranjero',
-      isbn: '978-0679720206',
-      anioPublicacion: 1942,
-      idioma: 'Francés',
-      descripcion: 'Un hombre indiferente comete un asesinato y enfrenta un juicio absurdo.',
-      editorial: 'Gallimard',
-      autores: ['Albert Camus'],
-      categorias: ['Literatura', 'Filosofía', 'Existencialismo'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780679720206-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111136',
-      titulo: 'El Mito de Sísifo',
-      isbn: '978-0679733731',
-      anioPublicacion: 1942,
-      idioma: 'Francés',
-      descripcion: 'Un ensayo filosófico sobre el absurdo y la búsqueda de significado.',
-      editorial: 'Gallimard',
-      autores: ['Albert Camus'],
-      categorias: ['Filosofía', 'Existencialismo', 'Ensayo'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780679733731-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111137',
-      titulo: 'Así Habló Zaratustra',
-      isbn: '978-0140441185',
-      anioPublicacion: 1883,
-      idioma: 'Alemán',
-      descripcion: 'Un libro filosófico que introduce el concepto del Superhombre.',
-      editorial: 'Penguin Classics',
-      autores: ['Friedrich Nietzsche'],
-      categorias: ['Filosofía', 'Existencialismo', 'Clásicos'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140441185-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111138',
-      titulo: 'El Príncipe',
-      isbn: '978-0140447525',
-      anioPublicacion: 1532,
-      idioma: 'Italiano',
-      descripcion: 'Un tratado político sobre cómo adquirir y mantener el poder.',
-      editorial: 'Penguin Classics',
-      autores: ['Nicolás Maquiavelo'],
-      categorias: ['Política', 'Filosofía', 'Historia'],
-      ejemplaresDisponibles: 5,
-      ejemplaresTotal: 7,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780140447525-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    }
-  ]
+  libros: any[] = [];
 }

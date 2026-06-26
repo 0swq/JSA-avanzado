@@ -30,9 +30,7 @@ Content-Type: application/json
   "libroId": "550e8400-e29b-41d4-a716-446655440005",
   "tipo": "pdf",
   "url": "https://ejemplo.com/libro.pdf",
-  "formato": "pdf",
-  "tamanioMb": 5.2,
-  "tipoAcceso": "autenticado"
+  "formato": "pdf"
 }
 
 ### PATCH actualizar recurso
@@ -41,7 +39,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "tipoAcceso": "publico"
+  "url": "https://ejemplo.com/actualizado.pdf"
 }
 
 ### DELETE eliminar recurso

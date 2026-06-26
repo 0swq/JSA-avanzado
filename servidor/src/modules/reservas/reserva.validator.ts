@@ -2,11 +2,11 @@
 import Joi from 'joi';
 
 export const crearReservaSchema = Joi.object({
-  usuarioId: Joi.string().required().messages({
-    'any.required': 'El usuarioId es obligatorio',
-  }),
   libroId: Joi.string().uuid().required().messages({
     'any.required': 'El libroId es obligatorio',
+  }),
+  ejemplarId: Joi.string().uuid().required().messages({
+    'any.required': 'El ejemplarId es obligatorio',
   }),
   fechaExpiracion: Joi.date().iso().required().messages({
     'any.required': 'La fecha de expiración es obligatoria',

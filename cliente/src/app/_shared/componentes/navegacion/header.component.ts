@@ -41,7 +41,7 @@ const USER_KEY = 'auth-user';
             <div class="flex items-center gap-3">
               @if (storage.esAdmin||storage.esDocente) {
                 <a routerLink="/admin/libros" class="no-underline">
-                  <app-boton-contorno etiqueta="Configuración" tamanio="sm"/>
+                  <app-boton-contorno etiqueta="Gestión" tamanio="sm"/>
                 </a>
               }
               <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-xl">

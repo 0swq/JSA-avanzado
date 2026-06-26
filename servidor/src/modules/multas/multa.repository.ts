@@ -6,7 +6,9 @@ export const multaRepositorio = {
   obtenerTodos(filtros: { estado?: string; usuarioId?: string } = {}) {
     const where: any = {};
     if (filtros.estado) where.estado = filtros.estado;
-    if (filtros.usuarioId) where.usuarioId = filtros.usuarioId;
+    if (filtros.usuarioId) {
+      where.prestamo = { usuarioId: filtros.usuarioId };
+    }
 
     return prisma.multa.findMany({
       where,
@@ -25,10 +27,15 @@ export const multaRepositorio = {
 
   obtenerPorUsuario(usuarioId: string) {
     return prisma.multa.findMany({
-      where: { usuarioId },
+      where: {
+        prestamo: { usuarioId },
+      },
       include: {
         prestamo: {
-          include: { ejemplar: { include: { libro: { select: { id: true, titulo: true } } } } },
+          include: {
+            ejemplar: { include: { libro: { select: { id: true, titulo: true } } } },
+            usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } },
+          },
         },
         pagos: true,
       },
@@ -42,8 +49,18 @@ export const multaRepositorio = {
       include: {
         prestamo: {
           include: {
-            ejemplar: { include: { libro: { select: { id: true, titulo: true } } } },
-            usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } },
+            ejemplar: {
+              include: {
+                libro: {
+                  include: {
+                    editorial: { select: { id: true, nombre: true } },
+                    autores: { include: { autor: { select: { id: true, nombre: true, apellidos: true } } } },
+                    categorias: { include: { categoria: { select: { id: true, nombre: true } } } },
+                  },
+                },
+              },
+            },
+            usuario: { select: { id: true, nombre: true, apellidos: true, correo: true, dni: true } },
           },
         },
         pagos: true,

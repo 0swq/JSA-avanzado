@@ -31,6 +31,8 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
     "tslib": "^2.8.1",
+    "vis-data": "^8.0.3",
+    "vis-network": "^10.1.0",
     "zone.js": "~0.15.0",
     "zustand": "^5.0.14"
   },

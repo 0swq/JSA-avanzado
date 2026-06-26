@@ -21,6 +21,22 @@ export const crearLibroSchema = Joi.object({
   idioma: Joi.string().max(50).optional(),
 
   publicado: Joi.boolean().optional(),
+
+  descripcion: Joi.string().optional(),
+
+  fotoUrl: Joi.string().uri().optional(),
+
+  autorIds: Joi.array().items(Joi.string().uuid()).optional(),
+
+  categoriaIds: Joi.array().items(Joi.string().uuid()).optional(),
+
+  recursosDigitales: Joi.array().items(
+    Joi.object({
+      tipo: Joi.string().required(),
+      url: Joi.string().uri().required(),
+      formato: Joi.string().optional(),
+    })
+  ).optional(),
 });
 
 export const actualizarLibroSchema = Joi.object({
@@ -35,6 +51,22 @@ export const actualizarLibroSchema = Joi.object({
   idioma: Joi.string().max(50).optional(),
 
   publicado: Joi.boolean().optional(),
+
+  descripcion: Joi.string().optional(),
+
+  fotoUrl: Joi.string().uri().optional(),
+
+  autorIds: Joi.array().items(Joi.string().uuid()).optional(),
+
+  categoriaIds: Joi.array().items(Joi.string().uuid()).optional(),
+
+  recursosDigitales: Joi.array().items(
+    Joi.object({
+      tipo: Joi.string().required(),
+      url: Joi.string().uri().required(),
+      formato: Joi.string().optional(),
+    })
+  ).optional(),
 }).min(1);
 
 export const filtroLibroSchema = Joi.object({

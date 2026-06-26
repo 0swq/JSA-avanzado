@@ -2,9 +2,7 @@
 import Joi from 'joi';
 
 export const crearResenaSchema = Joi.object({
-  usuarioId: Joi.string().required().messages({
-    'any.required': 'El usuarioId es obligatorio',
-  }),
+  usuarioId: Joi.string().optional(),
   libroId: Joi.string().uuid().required().messages({
     'any.required': 'El libroId es obligatorio',
   }),

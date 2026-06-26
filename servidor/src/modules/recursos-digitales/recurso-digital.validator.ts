@@ -13,9 +13,6 @@ export const crearRecursoDigitalSchema = Joi.object({
     'any.required': 'La URL es obligatoria',
   }),
   formato: Joi.string().max(20).optional(),
-  tamanioMb: Joi.number().optional(),
-  duracionMinutos: Joi.number().integer().optional(),
-  tipoAcceso: Joi.string().valid('publico', 'autenticado', 'restringido').optional(),
 });
 
 export const actualizarRecursoDigitalSchema = Joi.object({
@@ -23,7 +20,4 @@ export const actualizarRecursoDigitalSchema = Joi.object({
   tipo: Joi.string().valid('pdf', 'epub', 'audiolibro', 'video').optional(),
   url: Joi.string().uri().optional(),
   formato: Joi.string().max(20).optional(),
-  tamanioMb: Joi.number().optional(),
-  duracionMinutos: Joi.number().integer().optional(),
-  tipoAcceso: Joi.string().valid('publico', 'autenticado', 'restringido').optional(),
 }).min(1);

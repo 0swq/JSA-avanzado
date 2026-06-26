@@ -8,6 +8,8 @@ import { crearLibroSchema, actualizarLibroSchema, filtroLibroSchema } from './li
 
 const router = Router();
 
+router.get('/grafo', libroControlador.solicitarGrafo);
+router.get('/buscar', libroControlador.buscar);
 router.get('/', validar(filtroLibroSchema, 'query'), libroControlador.obtenerTodos);
 router.get('/:id', libroControlador.obtenerPorId);
 

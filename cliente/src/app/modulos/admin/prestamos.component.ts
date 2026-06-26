@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {Router, RouterModule} from '@angular/router';
 import {DatePipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
@@ -7,7 +7,6 @@ import {PilaVerticalComponent} from '../../_shared/componentes/diseno/pila-verti
 import {PilaHorizontalComponent} from '../../_shared/componentes/diseno/pila-horizontal.component';
 import {BotonComponent} from '../../_shared/componentes/botones/boton.component';
 import {BotonIconoComponent} from '../../_shared/componentes/botones/boton-icono.component';
-import {TextoNormalComponent} from '../../_shared/componentes/texto/texto-normal.component';
 import {TextoPequenoComponent} from '../../_shared/componentes/texto/texto-pequeno.component';
 import {TextTituloComponent} from '../../_shared/componentes/texto/text-titulo.component';
 import {EntradaBusquedaComponent} from '../../_shared/componentes/entradas/entrada-busqueda.component';
@@ -15,16 +14,16 @@ import {SelectorComponent} from '../../_shared/componentes/entradas/selector.com
 import {InsigniaComponent} from '../../_shared/componentes/datos/insignia.component';
 import {PaginacionComponent} from '../../_shared/componentes/navegacion/paginacion.component';
 import {NavigationService} from '../../_services/navigation-store';
-import {Prestamo} from '../../model';
+import {PrestamoService} from '../../_services/prestamo.service';
 
 @Component({
   selector: 'app-admin-prestamos',
   standalone: true,
   imports: [
     SidebarComponent, PilaVerticalComponent, PilaHorizontalComponent,
-    BotonIconoComponent, TextoPequenoComponent, TextTituloComponent, EntradaBusquedaComponent,
+    BotonComponent, BotonIconoComponent, TextoPequenoComponent, TextTituloComponent, EntradaBusquedaComponent,
     SelectorComponent, InsigniaComponent, PaginacionComponent,
-    FormsModule, RouterModule, DatePipe, BotonComponent,
+    FormsModule, RouterModule, DatePipe,
   ],
   template: `
     <div class="flex min-h-screen bg-stone-50">
@@ -63,18 +62,11 @@ import {Prestamo} from '../../model';
             <app-pila-horizontal espacio="4" alinear="fin" envolver="si">
               <div class="relative flex-1 min-w-[200px]">
                 <app-entrada-busqueda
-                  class="block pointer-events-none opacity-60 select-none"
-                  placeholder="Codigo de barras"
+                  class="block"
+                  placeholder="Buscar por usuario, libro o código de barras..."
                   [valor]="terminoBusqueda"
                   (valorCambio)="onBusquedaCambio($event)"/>
               </div>
-              <app-boton etiqueta="Devolver libro"/><div class="relative flex-1 min-w-[200px]">
-              <app-entrada-busqueda
-                class="block pointer-events-none opacity-60 select-none"
-                placeholder="Codigo de barras"
-                [valor]="terminoBusqueda"
-                (valorCambio)="onBusquedaCambio($event)"/>
-            </div>
               <app-selector
                 etiqueta="Estado"
                 id="filtro-estado"
@@ -192,9 +184,34 @@ import {Prestamo} from '../../model';
     </div>
   `,
 })
-export class AdminPrestamosComponent {
+export class AdminPrestamosComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly navigationService = inject(NavigationService);
+  private readonly prestamoService = inject(PrestamoService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  cargando: boolean = false;
+  prestamos: any[] = [];
+
+  ngOnInit(): void {
+    this.cargarPrestamos();
+  }
+
+  cargarPrestamos(): void {
+    this.cargando = true;
+    this.prestamoService.listar().subscribe({
+      next: (res: any) => {
+        const listado = Array.isArray(res) ? res : (res?.data ?? []);
+        this.prestamos = listado;
+        this.cdr.detectChanges();
+        this.cargando = false;
+      },
+      error: (err: any) => {
+        console.error('Error al cargar préstamos:', err.message);
+        this.cargando = false;
+      },
+    });
+  }
 
   terminoBusqueda: string = '';
   filtroEstado: string = '';
@@ -222,7 +239,7 @@ export class AdminPrestamosComponent {
     return Math.max(1, Math.ceil(this.prestamosFiltrados.length / this.tamanioPagina));
   }
 
-  get prestamosPaginados(): Prestamo[] {
+  get prestamosPaginados(): any[] {
     const ini = (this.paginaActual - 1) * this.tamanioPagina;
     return this.prestamosFiltrados.slice(ini, ini + this.tamanioPagina);
   }
@@ -231,121 +248,48 @@ export class AdminPrestamosComponent {
     if (p >= 1 && p <= this.totalPaginas) this.paginaActual = p;
   }
 
-  get prestamosFiltrados(): Prestamo[] {
+  get prestamosFiltrados(): any[] {
     let r = this.prestamos;
     const t = this.terminoBusqueda.trim().toLowerCase();
     if (t) {
-      r = r.filter(p => {
-        const u = this.usuariosHardcoded.find(u => u.id === p.usuarioId);
-        const lib = this.obtenerTituloLibro(p).toLowerCase();
-        const nombre = (u?.nombre + ' ' + u?.apellidos).toLowerCase();
-        return nombre.includes(t) || lib.includes(t);
+      r = r.filter((p: any) => {
+        const nombre = (p.usuario?.nombre + ' ' + p.usuario?.apellidos).toLowerCase();
+        const titulo = (p.ejemplar?.libro?.titulo ?? '').toLowerCase();
+        const codigoBarras = (p.ejemplar?.codigoBarras ?? '').toLowerCase();
+        return nombre.includes(t) || titulo.includes(t) || codigoBarras.includes(t);
       });
     }
     if (this.filtroEstado) {
-      r = r.filter(p => p.estado === this.filtroEstado);
+      r = r.filter((p: any) => p.estado === this.filtroEstado);
     }
     return r;
   }
 
   get activos(): number {
-    return this.prestamos.filter(p => p.estado === 'activo').length;
+    return this.prestamos.filter((p: any) => p.estado === 'activo').length;
   }
 
   get vencidos(): number {
-    return this.prestamos.filter(p => p.estado === 'vencido').length;
+    return this.prestamos.filter((p: any) => p.estado === 'vencido').length;
   }
 
   get devueltos(): number {
-    return this.prestamos.filter(p => p.estado === 'devuelto').length;
+    return this.prestamos.filter((p: any) => p.estado === 'devuelto').length;
   }
 
-  devolverLibro(prestamo: Prestamo): void {
-    this.navigationService.store.getState().seleccionarPrestamo(prestamo.id);
+  irADevolver(): void {
     this.router.navigate(['/admin/prestamos/devolver']);
   }
 
-  verDetalle(prestamo: Prestamo): void {
-    this.navigationService.store.getState().seleccionarPrestamo(prestamo.id);
+  devolverLibro(prestamo: any): void {
+    this.router.navigate(['/admin/prestamos/devolver', prestamo.id]);
   }
 
-  obtenerUsuario(prestamo: Prestamo): any {
-    return this.usuariosHardcoded.find(u => u.id === prestamo.usuarioId);
+  obtenerUsuario(prestamo: any): any {
+    return prestamo.usuario ?? null;
   }
 
-  obtenerTituloLibro(prestamo: Prestamo): string {
-    const ej = this.ejemplaresHardcoded.find(e => e.id === prestamo.ejemplarId);
-    if (!ej) return '—';
-    const lib = this.librosHardcoded.find((l: any) => l.id === ej.libroId);
-    return lib?.titulo ?? '—';
+  obtenerTituloLibro(prestamo: any): string {
+    return prestamo.ejemplar?.libro?.titulo ?? '—';
   }
-
-  prestamos: Prestamo[] = [
-    {
-      id: 'p-001',
-      usuarioId: 'u-001',
-      ejemplarId: 'e-101',
-      fechaMaxDevolucion: '2026-06-05T00:00:00Z',
-      estado: 'vencido',
-      creadoEn: '2026-05-28T00:00:00Z'
-    },
-    {
-      id: 'p-002',
-      usuarioId: 'u-002',
-      ejemplarId: 'e-301',
-      fechaMaxDevolucion: '2026-06-28T00:00:00Z',
-      estado: 'activo',
-      creadoEn: '2026-06-20T00:00:00Z'
-    },
-    {
-      id: 'p-003',
-      usuarioId: 'u-003',
-      ejemplarId: 'e-103',
-      fechaMaxDevolucion: '2026-05-17T00:00:00Z',
-      fechaDevolucion: '2026-05-20T00:00:00Z',
-      estado: 'devuelto',
-      creadoEn: '2026-05-10T00:00:00Z'
-    },
-    {
-      id: 'p-004',
-      usuarioId: 'u-001',
-      ejemplarId: 'e-501',
-      fechaMaxDevolucion: '2026-06-30T00:00:00Z',
-      estado: 'activo',
-      creadoEn: '2026-06-22T00:00:00Z'
-    },
-    {
-      id: 'p-005',
-      usuarioId: 'u-002',
-      ejemplarId: 'e-401',
-      fechaMaxDevolucion: '2026-06-10T00:00:00Z',
-      estado: 'vencido',
-      creadoEn: '2026-06-01T00:00:00Z'
-    },
-  ];
-
-  usuariosHardcoded = [
-    {id: 'u-001', nombre: 'Carlos', apellidos: 'Gómez', correo: 'carlos@correo.com'},
-    {id: 'u-002', nombre: 'María', apellidos: 'Pérez', correo: 'maria@correo.com'},
-    {id: 'u-003', nombre: 'Ana', apellidos: 'Torres', correo: 'ana@correo.com'},
-  ];
-
-  ejemplaresHardcoded = [
-    {id: 'e-101', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111'},
-    {id: 'e-103', libroId: '8f1e2c10-1a2b-4c3d-9e8f-111111111111'},
-    {id: 'e-301', libroId: '8f1e2c10-1a2b-4c3d-9e8f-333333333333'},
-    {id: 'e-401', libroId: '8f1e2c10-1a2b-4c3d-9e8f-444444444444'},
-    {id: 'e-501', libroId: '8f1e2c10-1a2b-4c3d-9e8f-555555555555'},
-  ];
-
-  librosHardcoded = [
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111', titulo: 'Cien Años de Soledad', autores: ['Gabriel García Márquez']},
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333', titulo: 'Don Quijote de la Mancha', autores: ['Miguel de Cervantes']},
-    {id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444', titulo: 'Breve Historia del Tiempo', autores: ['Stephen Hawking']},
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-      titulo: 'Introducción a los Algoritmos',
-      autores: ['Cormen', 'Leiserson']
-    },
-  ];
 }

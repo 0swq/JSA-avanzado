@@ -25,7 +25,6 @@ export class MultaService {
     return this.http.get(`${this.base}/${id}`);
   }
 
-  /** Multas del usuario autenticado (todos los roles) */
   misMultas(): Observable<any> {
     return this.http.get(
       `${environment.apiUrl}${environment.endpoints.multas.misMultas}`,
@@ -36,7 +35,7 @@ export class MultaService {
     return this.http.post(this.base, data);
   }
 
-  actualizar(id: string, data: { estado?: 'pendiente' | 'pagada' | 'condonada'; monto?: number }): Observable<any> {
+  actualizar(id: string, data: { estado?: 'pendiente' | 'pagada' | 'perdonada'; monto?: number }): Observable<any> {
     return this.http.patch(`${this.base}/${id}`, data);
   }
 

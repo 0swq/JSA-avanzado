@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer h-full flex flex-col
                 transition-all duration-200 hover:shadow-md hover:border-gray-300 hover:-translate-y-0.5"
          [class]="relleno ? '' : ''" (click)="presionado.emit()" (keydown.enter)="presionado.emit()" tabindex="0">
       @if (titulo || subtitulo) {
@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
           @if (subtitulo) { <p class="text-sm text-gray-500 mt-0.5">{{ subtitulo }}</p> }
         </div>
       }
-      <div [class]="relleno ? 'p-5' : ''">
+      <div [class]="relleno ? 'p-5' : ''" class="flex-1 min-h-0">
         <ng-content />
       </div>
     </div>

@@ -12,7 +12,7 @@ router.use(middlewareAutenticacion);
 router.get('/', middlewareRol(['admin', 'bibliotecario']), validar(filtroPrestamoSchema, 'query'), prestamoControlador.obtenerTodos);
 router.get('/mis-prestamos', middlewareRol(['admin', 'bibliotecario', 'docente', 'estudiante']), prestamoControlador.misPrestamos);
 router.get('/:id', middlewareRol(['admin', 'bibliotecario']), prestamoControlador.obtenerPorId);
-router.post('/', middlewareRol(['admin', 'bibliotecario']), validar(crearPrestamoSchema), prestamoControlador.crear);
+router.post('/', middlewareRol(['admin', 'bibliotecario', 'docente', 'estudiante']), validar(crearPrestamoSchema), prestamoControlador.crear);
 router.patch('/:id', middlewareRol(['admin', 'bibliotecario']), validar(actualizarPrestamoSchema), prestamoControlador.actualizar);
 
 export default router;

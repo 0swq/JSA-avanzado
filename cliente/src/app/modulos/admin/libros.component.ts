@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {Router, RouterModule} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {SidebarComponent} from '../../_shared/componentes/navegacion/sidebar.component';
@@ -15,6 +15,7 @@ import {SelectorComponent} from '../../_shared/componentes/entradas/selector.com
 import {InsigniaComponent} from '../../_shared/componentes/datos/insignia.component';
 import {PaginacionComponent} from '../../_shared/componentes/navegacion/paginacion.component';
 import {NavigationService} from '../../_services/navigation-store';
+import {LibroService} from '../../_services/libro.service';
 
 @Component({
   selector: 'app-admin-libros',
@@ -179,9 +180,49 @@ TextoPequenoComponent, TextTituloComponent,
     </div>
   `,
 })
-export class AdminLibrosComponent {
+export class AdminLibrosComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly navigationService = inject(NavigationService);
+  private readonly libroService = inject(LibroService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  cargando: boolean = false;
+
+  ngOnInit(): void {
+    this.cargarLibros();
+  }
+
+  cargarLibros(): void {
+    this.cargando = true;
+    this.libroService.listar().subscribe({
+      next: (data: any) => {
+        const listado = Array.isArray(data) ? data : (data?.data ?? data?.libros ?? []);
+        this.libros = listado.map((l: any) => this.mapearLibro(l));
+        this.cdr.detectChanges();
+        this.cargando = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar libros:', err.message);
+        this.cargando = false;
+      },
+    });
+  }
+
+  private mapearLibro(l: any): any {
+    const ejemplares: any[] = Array.isArray(l.ejemplares) ? l.ejemplares : [];
+    return {
+      ...l,
+      ejemplaresTotal: ejemplares.length,
+      ejemplaresDisponibles: ejemplares.filter(e => e.estado === 'disponible').length,
+      autores: Array.isArray(l.autores)
+        ? l.autores.map((a: any) => a.autor ? `${a.autor.nombre ?? ''} ${a.autor.apellidos ?? ''}`.trim() : String(a))
+        : [],
+      categorias: Array.isArray(l.categorias)
+        ? l.categorias.map((c: any) => c.categoria?.nombre ?? String(c))
+        : [],
+      editorial: l.editorial?.nombre ?? l.editorial ?? '',
+    };
+  }
 
   terminoBusqueda: string = '';
   filtroCategoria: string = '';
@@ -194,7 +235,7 @@ export class AdminLibrosComponent {
 
   get opcionesCategorias(): Array<{ etiqueta: string; valor: string }> {
     const cats = new Set<string>();
-    this.libros.forEach(l => l.categorias.forEach(c => cats.add(c)));
+    this.libros.forEach((l: any) => l.categorias.forEach((c: any) => cats.add(c)));
     return Array.from(cats).sort().map(c => ({etiqueta: c, valor: c}));
   }
 
@@ -237,7 +278,7 @@ export class AdminLibrosComponent {
     if (termino) {
       resultado = resultado.filter(l =>
         l.titulo.toLowerCase().includes(termino) ||
-        l.autores.some(a => a.toLowerCase().includes(termino)) ||
+        l.autores.some((a: string) => a.toLowerCase().includes(termino)) ||
         l.isbn.toLowerCase().includes(termino),
       );
     }
@@ -265,191 +306,20 @@ export class AdminLibrosComponent {
 
   editarLibro(libro: any): void {
     this.navigationService.store.getState().seleccionarLibro(libro.id);
-    this.router.navigate(['/admin/libros/editar']);
+    this.router.navigate(['/admin/libros/editar', libro.id]);
   }
 
   eliminarLibro(libro: any): void {
+    if (!confirm(`¿Eliminar "${libro.titulo}"? Esta acción no se puede deshacer.`)) return;
+    this.libroService.eliminar(libro.id).subscribe({
+      next: () => {
+        this.libros = this.libros.filter(l => l.id !== libro.id);
+        this.paginaActual = 1;
+      },
+      error: (err) => {
+        console.error('Error al eliminar libro:', err);
+      },
+    });
   }
-  libros = [
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-      titulo: 'Cien Años de Soledad',
-      isbn: '978-0307474728',
-      anioPublicacion: 1967,
-      idioma: 'Español',
-      descripcion: 'La historia de la familia Buendía a lo largo de varias generaciones en Macondo.',
-      editorial: 'Editorial Sudamericana',
-      autores: ['Gabriel García Márquez'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780307474728-M.jpg',
-      archivosDigitales: ['pdf', 'mp3'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-222222222222',
-      titulo: 'Clean Code',
-      isbn: '978-0132350884',
-      anioPublicacion: 2008,
-      idioma: 'Inglés',
-      descripcion: 'Una guía de buenas prácticas para escribir código limpio y mantenible.',
-      editorial: 'Prentice Hall',
-      autores: ['Robert C. Martin'],
-      categorias: ['Ingeniería de Software', 'Tecnología'],
-      ejemplaresDisponibles: 0,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780132350884-M.jpg',
-      archivosDigitales: ['pdf'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-      titulo: 'Don Quijote de la Mancha',
-      isbn: '978-8420412146',
-      anioPublicacion: 1605,
-      idioma: 'Español',
-      descripcion: 'Las aventuras de un hidalgo que enloquece leyendo novelas de caballería.',
-      editorial: 'Editorial Cátedra',
-      autores: ['Miguel de Cervantes'],
-      categorias: ['Literatura', 'Clásicos'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788420412146-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444',
-      titulo: 'Breve Historia del Tiempo',
-      isbn: '978-0553380163',
-      anioPublicacion: 1988,
-      idioma: 'Español',
-      descripcion: 'Una introducción accesible a la cosmología y la física moderna.',
-      editorial: 'Bantam Books',
-      autores: ['Stephen Hawking'],
-      categorias: ['Ciencia', 'Física'],
-      ejemplaresDisponibles: 1,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780553380163-M.jpg',
-      archivosDigitales: ['pdf', 'mp4'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-      titulo: 'Introducción a los Algoritmos',
-      isbn: '978-0262033848',
-      anioPublicacion: 2009,
-      idioma: 'Inglés',
-      descripcion: 'Texto de referencia sobre algoritmos y estructuras de datos.',
-      editorial: 'MIT Press',
-      autores: ['Thomas H. Cormen', 'Charles E. Leiserson'],
-      categorias: ['Ingeniería de Software', 'Matemáticas'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780262033848-M.jpg',
-      archivosDigitales: ['pdf'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-666666666666',
-      titulo: 'La Casa de los Espíritus',
-      isbn: '978-0525433457',
-      anioPublicacion: 1982,
-      idioma: 'Español',
-      descripcion: 'Una saga familiar marcada por el amor, la política y lo sobrenatural en Chile.',
-      editorial: 'Plaza & Janés',
-      autores: ['Isabel Allende'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780525433457-M.jpg',
-      archivosDigitales: ['mp3'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-777777777777',
-      titulo: 'El Principito',
-      isbn: '978-0156012195',
-      anioPublicacion: 1943,
-      idioma: 'Español',
-      descripcion: 'Un piloto se encuentra con un pequeño príncipe en el desierto del Sahara.',
-      editorial: 'Reynal & Hitchcock',
-      autores: ['Antoine de Saint-Exupéry'],
-      categorias: ['Literatura', 'Infantil', 'Filosofía'],
-      ejemplaresDisponibles: 5,
-      ejemplaresTotal: 8,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780156012195-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-888888888888',
-      titulo: '1984',
-      isbn: '978-0451524935',
-      anioPublicacion: 1949,
-      idioma: 'Inglés',
-      descripcion: 'Una distopía sobre un estado totalitario que vigila a sus ciudadanos.',
-      editorial: 'Secker & Warburg',
-      autores: ['George Orwell'],
-      categorias: ['Literatura', 'Ciencia Ficción', 'Política'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780451524935-M.jpg',
-      archivosDigitales: ['pdf', 'mp3'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-999999999999',
-      titulo: 'El Alquimista',
-      isbn: '978-0062502174',
-      anioPublicacion: 1988,
-      idioma: 'Español',
-      descripcion: 'Un joven pastor andaluz viaja en busca de su leyenda personal.',
-      editorial: 'Editorial Planeta',
-      autores: ['Paulo Coelho'],
-      categorias: ['Literatura', 'Filosofía', 'Aventura'],
-      ejemplaresDisponibles: 6,
-      ejemplaresTotal: 7,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780062502174-M.jpg',
-      archivosDigitales: ['pdf', 'mp4'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-aaaaaaaaaaaa',
-      titulo: 'El Arte de la Guerra',
-      isbn: '978-1590302259',
-      anioPublicacion: 500,
-      idioma: 'Chino',
-      descripcion: 'Un tratado militar antiguo sobre estrategia y tácticas.',
-      editorial: 'Shambhala',
-      autores: ['Sun Tzu'],
-      categorias: ['Filosofía', 'Historia', 'Estrategia'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9781590302259-M.jpg',
-      archivosDigitales: ['pdf', 'mp3'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-bbbbbbbbbbbb',
-      titulo: 'El Hobbit',
-      isbn: '978-0547928227',
-      anioPublicacion: 1937,
-      idioma: 'Inglés',
-      descripcion: 'La aventura de Bilbo Bolsón para recuperar el tesoro de los enanos.',
-      editorial: 'George Allen & Unwin',
-      autores: ['J.R.R. Tolkien'],
-      categorias: ['Literatura', 'Fantasía', 'Aventura'],
-      ejemplaresDisponibles: 7,
-      ejemplaresTotal: 10,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780547928227-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4'],
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-cccccccccccc',
-      titulo: 'El Código Da Vinci',
-      isbn: '978-0385504201',
-      anioPublicacion: 2003,
-      idioma: 'Inglés',
-      descripcion: 'Un simbólogo descubre un secreto oculto en las obras de Leonardo da Vinci.',
-      editorial: 'Doubleday',
-      autores: ['Dan Brown'],
-      categorias: ['Literatura', 'Misterio', 'Suspenso'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780385504201-M.jpg',
-      archivosDigitales: ['pdf', 'mp4'],
-    },
-  ];
+  libros: any[] = [];
 }

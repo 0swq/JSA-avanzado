@@ -42,6 +42,7 @@ export class LibroService {
     idioma?: string;
     publicado?: boolean;
     descripcion?: string;
+    fotoUrl?: string;
     autorIds?: string[];
     categoriaIds?: string[];
   }): Observable<any> {
@@ -54,5 +55,17 @@ export class LibroService {
 
   eliminar(id: string): Observable<any> {
     return this.http.delete(`${this.base}/${id}`);
+  }
+
+  buscar(termino: string, pagina?: number, porPagina?: number): Observable<any> {
+    let params = new HttpParams().set('q', termino);
+    if (pagina) params = params.set('pagina', String(pagina));
+    if (porPagina) params = params.set('porPagina', String(porPagina));
+    return this.http.get(`${this.base}/buscar`, { params });
+  }
+
+  solicitarGrafo(termino: string): Observable<{ nodes: any[]; edges: any[] }> {
+    const params = new HttpParams().set('q', termino);
+    return this.http.get<{ nodes: any[]; edges: any[] }>(`${this.base}/grafo`, { params });
   }
 }

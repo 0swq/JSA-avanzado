@@ -88,6 +88,7 @@ model Libro {
   idioma          String?
   publicado       Boolean  @default(true)
   creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  fotoUrl         String?  @map("foto_url")
   descripcion     String?  @db.Text
   editorial         Editorial        @relation(fields: [editorialId], references: [id])
   recursosDigitales RecursoDigital[]
@@ -104,13 +105,10 @@ model Libro {
 model RecursoDigital {
   id              String   @id @default(uuid()) @db.Uuid
   libroId         String   @map("libro_id") @db.Uuid
-  tipo            String   @db.VarChar(30)
-  url             String
-  formato         String?  @db.VarChar(20)
-  tamanioMb       Decimal? @map("tamanio_mb")
-  duracionMinutos Int?     @map("duracion_minutos")
-  tipoAcceso      String?  @map("tipo_acceso") @db.VarChar(30)
-  creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  tipo     String   @db.VarChar(30)
+  url      String
+  formato  String?  @db.VarChar(20)
+  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   libro Libro @relation(fields: [libroId], references: [id])
 
@@ -128,6 +126,7 @@ model Ejemplar {
 
   libro     Libro      @relation(fields: [libroId], references: [id])
   prestamos Prestamo[]
+  reservas  Reserva[]
 
   @@map("ejemplar")
 }
@@ -200,12 +199,14 @@ model Reserva {
   id              String   @id @default(uuid()) @db.Uuid
   usuarioId       String   @map("usuario_id") @db.VarChar(128)
   libroId         String   @map("libro_id") @db.Uuid
+  ejemplarId      String   @map("ejemplar_id") @db.Uuid
   fechaExpiracion DateTime @map("fecha_expiracion") @db.Timestamptz(6)
   estado          String   @default("pendiente") @db.VarChar(20)
   creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
-  usuario Usuario @relation(fields: [usuarioId], references: [id])
-  libro   Libro   @relation(fields: [libroId], references: [id])
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+  libro    Libro    @relation(fields: [libroId], references: [id])
+  ejemplar Ejemplar @relation(fields: [ejemplarId], references: [id])
 
   @@map("reserva")
 }

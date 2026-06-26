@@ -12,8 +12,8 @@ export const prestamoRepositorio = {
     return prisma.prestamo.findMany({
       where,
       include: {
-        usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } },
-        ejemplar: { include: { libro: { select: { id: true, titulo: true } } } },
+        usuario: { select: { id: true, nombre: true, apellidos: true, correo: true, dni: true } },
+        ejemplar: { include: { libro: { select: { id: true, titulo: true, fotoUrl: true } } } },
         multa: true,
       },
       orderBy: { creadoEn: 'desc' },
@@ -35,8 +35,19 @@ export const prestamoRepositorio = {
     return prisma.prestamo.findUnique({
       where: { id },
       include: {
-        usuario: { select: { id: true, nombre: true, apellidos: true, correo: true } },
-        ejemplar: { include: { libro: { select: { id: true, titulo: true } } } },
+        usuario: { select: { id: true, nombre: true, apellidos: true, correo: true, dni: true } },
+        ejemplar: {
+          include: {
+            libro: {
+              select: {
+                id: true,
+                titulo: true,
+                fotoUrl: true,
+                autores: { include: { autor: { select: { nombre: true, apellidos: true } } } },
+              },
+            },
+          },
+        },
         multa: true,
       },
     });

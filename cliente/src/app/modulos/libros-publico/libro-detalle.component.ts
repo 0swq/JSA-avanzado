@@ -1,7 +1,7 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {DatePipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {Router, RouterLink} from '@angular/router';
+import {Router, RouterLink, ActivatedRoute} from '@angular/router';
 import {HeaderComponent} from '../../_shared/componentes/navegacion/header.component';
 import {FooterComponent} from '../../_shared/componentes/navegacion/footer.component';
 import {TarjetaComponent} from '../../_shared/componentes/datos/tarjeta.component';
@@ -12,6 +12,11 @@ import {NavigationService} from "../../_services/navigation-store";
 import {PilaHorizontalComponent} from "../../_shared/componentes/diseno/pila-horizontal.component";
 import {BotonContornoComponent} from "../../_shared/componentes/botones/boton-contorno.component";
 import {PilaVerticalComponent} from "../../_shared/componentes/diseno/pila-vertical.component";
+import {LibroService} from "../../_services/libro.service";
+import {ResenaService} from "../../_services/resena.service";
+import {FavoritoService} from "../../_services/favorito.service";
+import {FavoritoStoreService} from "../../_services/favorito-store";
+import {StorageService} from "../../_services/storage.service";
 
 interface Comentario {
   id: string;
@@ -43,7 +48,7 @@ interface Comentario {
               <div class="flex flex-col sm:flex-row gap-6">
 
                 <div
-                  class="aspect-[9/16] w-full sm:w-48 flex-shrink-0 rounded-lg bg-gray-200 overflow-hidden flex items-center justify-center text-gray-400">
+                  class="aspect-[9/16] w-full sm:w-48 flex-shrink-0 self-start rounded-lg bg-gray-200 overflow-hidden flex items-center justify-center text-gray-400">
                   @if (libro.foto && !errorImagen) {
                     <img
                       [alt]="libro.titulo"
@@ -98,19 +103,29 @@ interface Comentario {
                   }
 
                   <app-pila-horizontal>
-                    <app-boton
-                      etiqueta="Favorito"
-                      tamanio="md"
-                      [anchoCompleto]="false"
-                      [deshabilitado]="libro.ejemplaresDisponibles === 0"/>
-                    <a routerLink="/realizar-reserva">
+                    @if (!esFavorito) {
+                      <app-boton
+                        etiqueta="Favorito"
+                        tamanio="md"
+                        [anchoCompleto]="false"
+                        [cargando]="cargandoFavorito"
+                        (presionado)="toggleFavorito()"/>
+                    } @else {
+                      <app-boton-contorno
+                        etiqueta="Favorito ★"
+                        tamanio="md"
+                        [anchoCompleto]="false"
+                        [cargando]="cargandoFavorito"
+                        (presionado)="toggleFavorito()"/>
+                    }
+                    <a [routerLink]="['/realizar-reserva', libro.id]">
                       <app-boton-contorno
                         etiqueta="Reservar"
                         tamanio="md"
                         [anchoCompleto]="false"
                         [deshabilitado]="libro.ejemplaresDisponibles === 0"/>
                     </a>
-                    <a routerLink="/realizar-prestamo">
+                    <a [routerLink]="['/realizar-prestamo', libro.id]">
                       <app-boton
                         etiqueta="Hacer Prestamo"
                         tamanio="md"
@@ -121,34 +136,61 @@ interface Comentario {
                 </div>
               </div>
             </app-tarjeta>
-            <app-tarjeta titulo="Archivos digitales">
-              <div class="items-center">
-                <div></div>
-              </div>
-            </app-tarjeta>
+            @if (isLoggedIn && libro.recursosDigitales.length > 0) {
+              <app-tarjeta titulo="Recursos digitales">
+                <div class="flex flex-col gap-3">
+                  @for (recurso of libro.recursosDigitales; track recurso.id) {
+                    <div class="flex items-center justify-between bg-stone-50 rounded-lg px-4 py-3">
+                      <div class="flex items-center gap-3">
+                        <span class="text-xs uppercase font-mono bg-stone-200 px-2 py-1 rounded">{{ recurso.formato }}</span>
+                        <div class="flex flex-col">
+                          <span class="text-sm font-medium text-stone-700">{{ recurso.tipo }}</span>
+                          <span class="text-xs text-stone-400 truncate max-w-[300px]">{{ recurso.url }}</span>
+                        </div>
+                      </div>
+                      <a [href]="recurso.url" target="_blank" rel="noopener noreferrer"
+                         class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg
+                                bg-amber-500 text-white hover:bg-amber-600 transition-colors
+                                no-underline">
+                        Obtener
+                      </a>
+                    </div>
+                  }
+                </div>
+              </app-tarjeta>
+            }
             <app-tarjeta>
               <div class="flex flex-col gap-4">
                 <h2 class="text-lg font-semibold text-stone-800">
                   Comentarios ({{ comentariosDelLibro.length }})
                 </h2>
 
-                <div class="flex flex-col gap-2">
-                <textarea
-                  [(ngModel)]="nuevoComentario"
-                  rows="3"
-                  placeholder="Escribe tu comentario sobre este libro..."
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none
-                         focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500
-                         transition-colors duration-150"></textarea>
-                  <div class="flex justify-end">
-                    <app-boton
-                      etiqueta="Publicar comentario"
-                      tamanio="sm"
-                      [anchoCompleto]="false"
-                      [deshabilitado]="!nuevoComentario.trim()"
-                      (presionado)="agregarComentario()"/>
+                @if (isLoggedIn) {
+                  <div class="flex flex-col gap-2">
+                    <textarea
+                      [(ngModel)]="nuevoComentario"
+                      rows="3"
+                      placeholder="Escribe tu comentario sobre este libro..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none
+                             focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500
+                             transition-colors duration-150"></textarea>
+                      <div class="flex justify-end">
+                        <app-boton
+                          etiqueta="Publicar comentario"
+                          tamanio="sm"
+                          [anchoCompleto]="false"
+                          [deshabilitado]="!nuevoComentario.trim()"
+                          (presionado)="agregarComentario()"/>
+                      </div>
                   </div>
-                </div>
+                } @else {
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-center">
+                    <a [routerLink]="['/login']" class="text-amber-700 hover:text-amber-800 font-medium no-underline">
+                      Inicia sesión
+                    </a>
+                    <span class="text-stone-500 text-sm"> para dejar un comentario</span>
+                  </div>
+                }
 
                 <div class="flex flex-col gap-4 mt-2">
                   @for (comentario of comentariosDelLibro; track comentario.id) {
@@ -177,156 +219,189 @@ interface Comentario {
     </div>
   `,
 })
-export class LibroDetalleComponent {
+export class LibroDetalleComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly navigationService = inject(NavigationService);
+  private readonly libroService = inject(LibroService);
+  private readonly resenaService = inject(ResenaService);
+  private readonly favoritoService = inject(FavoritoService);
+  private readonly favoritoStoreService = inject(FavoritoStoreService);
+  private readonly storageService = inject(StorageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   errorImagen = false;
-  libros = [
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-111111111111',
-      titulo: 'Cien Años de Soledad',
-      isbn: '978-0307474728',
-      anioPublicacion: 1967,
-      idioma: 'Español',
-      descripcion: 'La historia de la familia Buendía a lo largo de varias generaciones en Macondo.',
-      editorial: 'Editorial Sudamericana',
-      autores: ['Gabriel García Márquez'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      ejemplaresDisponibles: 3,
-      ejemplaresTotal: 5,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780307474728-M.jpg',
-      archivosDigitales: ['pdf', 'mp3']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-222222222222',
-      titulo: 'Clean Code',
-      isbn: '978-0132350884',
-      anioPublicacion: 2008,
-      idioma: 'Inglés',
-      descripcion: 'Una guía de buenas prácticas para escribir código limpio y mantenible.',
-      editorial: 'Prentice Hall',
-      autores: ['Robert C. Martin'],
-      categorias: ['Ingeniería de Software', 'Tecnología'],
-      ejemplaresDisponibles: 0,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780132350884-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-333333333333',
-      titulo: 'Don Quijote de la Mancha',
-      isbn: '978-8420412146',
-      anioPublicacion: 1605,
-      idioma: 'Español',
-      descripcion: 'Las aventuras de un hidalgo que enloquece leyendo novelas de caballería.',
-      editorial: 'Editorial Cátedra',
-      autores: ['Miguel de Cervantes'],
-      categorias: ['Literatura', 'Clásicos'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 4,
-      foto: 'https://covers.openlibrary.org/b/isbn/9788420412146-M.jpg',
-      archivosDigitales: ['pdf', 'mp3', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-444444444444',
-      titulo: 'Breve Historia del Tiempo',
-      isbn: '978-0553380163',
-      anioPublicacion: 1988,
-      idioma: 'Español',
-      descripcion: 'Una introducción accesible a la cosmología y la física moderna.',
-      editorial: 'Bantam Books',
-      autores: ['Stephen Hawking'],
-      categorias: ['Ciencia', 'Física'],
-      ejemplaresDisponibles: 1,
-      ejemplaresTotal: 3,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780553380163-M.jpg',
-      archivosDigitales: ['pdf', 'mp4']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-555555555555',
-      titulo: 'Introducción a los Algoritmos',
-      isbn: '978-0262033848',
-      anioPublicacion: 2009,
-      idioma: 'Inglés',
-      descripcion: 'Texto de referencia sobre algoritmos y estructuras de datos.',
-      editorial: 'MIT Press',
-      autores: ['Thomas H. Cormen', 'Charles E. Leiserson'],
-      categorias: ['Ingeniería de Software', 'Matemáticas'],
-      ejemplaresDisponibles: 4,
-      ejemplaresTotal: 6,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780262033848-M.jpg',
-      archivosDigitales: ['pdf']
-    },
-    {
-      id: '8f1e2c10-1a2b-4c3d-9e8f-666666666666',
-      titulo: 'La Casa de los Espíritus',
-      isbn: '978-0525433457',
-      anioPublicacion: 1982,
-      idioma: 'Español',
-      descripcion: 'Una saga familiar marcada por el amor, la política y lo sobrenatural en Chile.',
-      editorial: 'Plaza & Janés',
-      autores: ['Isabel Allende'],
-      categorias: ['Literatura', 'Realismo mágico'],
-      ejemplaresDisponibles: 2,
-      ejemplaresTotal: 2,
-      foto: 'https://covers.openlibrary.org/b/isbn/9780525433457-M.jpg',
-      archivosDigitales: ['mp3']
-    },
-  ];
-
-  get libro() {
-    const id = this.navigationService.store.getState().libroSeleccionadoId;
-    return this.libros.find(l => l.id === id) ?? null;
-  }
-
-  // Comentarios en memoria, agrupados por id de libro.
-  // TODO: mover a un servicio/backend real cuando exista.
-  comentarios: Comentario[] = [
-    {
-      id: 'c1',
-      autor: 'María Pérez',
-      texto: 'Una obra maestra, la volvería a leer mil veces.',
-      fecha: new Date('2026-03-12'),
-    },
-    {
-      id: 'c2',
-      autor: 'Jorge Ramírez',
-      texto: 'Me costó entrar al principio pero al final me encantó.',
-      fecha: new Date('2026-05-02'),
-    },
-  ];
-
-  comentariosPorLibro: Record<string, Comentario[]> = {
-    '8f1e2c10-1a2b-4c3d-9e8f-111111111111': this.comentarios,
-  };
-
+  cargando: boolean = false;
+  libro: any = null;
+  comentariosDelLibro: Comentario[] = [];
   nuevoComentario: string = '';
+  esFavorito: boolean = false;
+  favoritoId: string | null = null;
+  cargandoFavorito: boolean = false;
 
-  get comentariosDelLibro(): Comentario[] {
-    if (!this.libro) {
-      return [];
-    }
-    return this.comentariosPorLibro[this.libro.id] ?? [];
+  get isLoggedIn(): boolean {
+    return this.storageService.isLoggedIn();
   }
 
-  agregarComentario(): void {
-    const texto = this.nuevoComentario.trim();
-    if (!texto || !this.libro) {
+  ngOnInit(): void {
+    // Primero la ruta (catalogo/:id), fallback al navigation store
+    const id = this.route.snapshot.paramMap.get('id')
+      ?? this.navigationService.store.getState().libroSeleccionadoId;
+    if (id) {
+      this.navigationService.store.getState().seleccionarLibro(id);
+      this.cargarLibro(id);
+      this.cargarResenas(id);
+    }
+  }
+
+  cargarLibro(id: string): void {
+    this.cargando = true;
+    this.libroService.obtener(id).subscribe({
+      next: (data: any) => {
+        const libro = data?.data ?? data;
+        this.libro = this.mapearLibro(libro);
+        this.cargarEstadoFavorito(id);
+        this.cdr.detectChanges();
+        this.cargando = false;
+      },
+      error: (err: any) => {
+        console.error('Error al cargar libro:', err.message);
+        this.cargando = false;
+      },
+    });
+  }
+
+  cargarEstadoFavorito(libroId: string): void {
+    this.favoritoService.misFavoritos().subscribe({
+      next: (data: any) => {
+        const favoritos = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        // Sincronizar store
+        this.favoritoStoreService.store.getState().setFavoritosIds(favoritos.map((f: any) => f.libroId));
+        // Estado local para este libro
+        const encontrado = favoritos.find((f: any) => f.libroId === libroId);
+        if (encontrado) {
+          this.esFavorito = true;
+          this.favoritoId = encontrado.id;
+        } else {
+          this.esFavorito = false;
+          this.favoritoId = null;
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al cargar favoritos:', err.message);
+      },
+    });
+  }
+
+  toggleFavorito(): void {
+    if (!this.isLoggedIn) {
+      this.router.navigate(['/login']);
       return;
     }
 
-    const comentario: Comentario = {
-      id: crypto.randomUUID(),
-      autor: 'Tú',
-      texto,
-      fecha: new Date(),
-    };
+    if (this.cargandoFavorito || !this.libro) return;
+    this.cargandoFavorito = true;
 
-    const idLibro = this.libro.id;
-    const actuales = this.comentariosPorLibro[idLibro] ?? [];
-    this.comentariosPorLibro[idLibro] = [comentario, ...actuales];
-    this.nuevoComentario = '';
+    if (this.esFavorito && this.favoritoId) {
+      this.favoritoService.eliminar(this.favoritoId).subscribe({
+        next: () => {
+          this.favoritoStoreService.store.getState().eliminarFavoritoId(this.libro.id);
+          this.esFavorito = false;
+          this.favoritoId = null;
+          this.cargandoFavorito = false;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error al eliminar favorito:', err.message);
+          this.cargandoFavorito = false;
+        },
+      });
+    } else {
+      this.favoritoService.agregar({ usuarioId: this.storageService.getId(), libroId: this.libro.id }).subscribe({
+        next: (res: any) => {
+          const creado = res?.data ?? res;
+          this.favoritoStoreService.store.getState().agregarFavoritoId(this.libro.id);
+          this.esFavorito = true;
+          this.favoritoId = creado?.id ?? null;
+          this.cargandoFavorito = false;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Error al agregar favorito:', err.message);
+          this.cargandoFavorito = false;
+        },
+      });
+    }
+  }
+
+  cargarResenas(libroId: string): void {
+    this.resenaService.porLibro(libroId).subscribe({
+      next: (data: any) => {
+        const listado = Array.isArray(data) ? data : (data?.data ?? data?.resenas ?? []);
+        this.comentariosDelLibro = listado.map((r: any) => ({
+          id: r.id,
+          autor: r.usuario?.nombre ?? 'Anónimo',
+          texto: r.comentario ?? '',
+          fecha: new Date(r.creadoEn),
+        }));
+      },
+      error: (err: any) => {
+        console.error('Error al cargar reseñas:', err.message);
+      },
+    });
+  }
+
+  private mapearLibro(l: any): any {
+    const ejemplares: any[] = Array.isArray(l.ejemplares) ? l.ejemplares : [];
+    const recursos: any[] = Array.isArray(l.recursosDigitales) ? l.recursosDigitales : [];
+    return {
+      ...l,
+      foto: l.fotoUrl ?? l.foto ?? null,
+      ejemplaresTotal: ejemplares.length,
+      ejemplaresDisponibles: ejemplares.filter(e => e.estado === 'disponible').length,
+      autores: Array.isArray(l.autores)
+        ? l.autores.map((a: any) => a.autor ? `${a.autor.nombre ?? ''} ${a.autor.apellidos ?? ''}`.trim() : String(a))
+        : [],
+      categorias: Array.isArray(l.categorias)
+        ? l.categorias.map((c: any) => c.categoria?.nombre ?? String(c))
+        : [],
+      editorial: l.editorial?.nombre ?? l.editorial ?? '',
+      archivosDigitales: recursos.map(r => r.formato ?? r.tipo ?? 'pdf').filter(Boolean),
+      recursosDigitales: recursos,
+    };
+  }
+
+  agregarComentario(): void {
+    if (!this.isLoggedIn) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const texto = this.nuevoComentario.trim();
+    if (!texto || !this.libro) return;
+
+    this.resenaService.crear({
+      libroId: this.libro.id,
+      puntuacion: 5,
+      comentario: texto,
+    }).subscribe({
+      next: (res: any) => {
+        const creada = res?.data ?? res;
+        const nuevo: Comentario = {
+          id: creada.id ?? crypto.randomUUID(),
+          autor: this.storageService.getNombre() || 'Tú',
+          texto: creada.comentario ?? texto,
+          fecha: new Date(creada.creadoEn),
+        };
+        this.comentariosDelLibro = [nuevo, ...this.comentariosDelLibro];
+        this.nuevoComentario = '';
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al publicar comentario:', err.message);
+      },
+    });
   }
 
   volver(): void {

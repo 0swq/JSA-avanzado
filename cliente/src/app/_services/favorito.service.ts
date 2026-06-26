@@ -22,7 +22,7 @@ export class FavoritoService {
     );
   }
 
-  agregar(data: { libroId: string }): Observable<any> {
+  agregar(data: { usuarioId: string; libroId: string }): Observable<any> {
     return this.http.post(
       `${environment.apiUrl}${environment.endpoints.favoritos.agregar}`,
       data,

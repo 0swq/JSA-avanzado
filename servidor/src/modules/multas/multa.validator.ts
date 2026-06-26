@@ -16,10 +16,10 @@ export const crearMultaSchema = Joi.object({
 export const actualizarMultaSchema = Joi.object({
   monto: Joi.number().positive().optional(),
   diasMora: Joi.number().integer().min(1).optional(),
-  estado: Joi.string().valid('pendiente', 'pagada', 'condonada').optional(),
+  estado: Joi.string().valid('pendiente', 'pagada', 'perdonada').optional(),
 }).min(1);
 
 export const filtroMultaSchema = Joi.object({
-  estado: Joi.string().valid('pendiente', 'pagada', 'condonada').optional(),
+  estado: Joi.string().valid('pendiente', 'pagada', 'perdonada').optional(),
   usuarioId: Joi.string().optional(),
 });

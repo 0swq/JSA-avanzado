@@ -6,6 +6,8 @@ export interface CrearLibroDto {
   anioPublicacion?: number;
   idioma?: string;
   publicado?: boolean;
+  descripcion?: string;
+  fotoUrl?: string;
 }
 
 export interface ActualizarLibroDto {
@@ -15,6 +17,8 @@ export interface ActualizarLibroDto {
   anioPublicacion?: number;
   idioma?: string;
   publicado?: boolean;
+  descripcion?: string;
+  fotoUrl?: string;
 }
 
 export interface RespuestaLibroDto {
@@ -25,5 +29,7 @@ export interface RespuestaLibroDto {
   anioPublicacion: number | null;
   idioma: string | null;
   publicado: boolean;
+  descripcion: string | null;
+  fotoUrl: string | null;
   creadoEn: Date;
 }

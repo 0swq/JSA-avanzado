@@ -9,14 +9,17 @@ import { FormsModule } from '@angular/forms';
   template: `
     <div class="flex flex-col gap-1">
       @if (etiqueta) {
-        <label [for]="id" class="text-sm font-medium text-gray-700">{{ etiqueta }}</label>
+        <label [for]="id" class="text-sm font-medium text-gray-700">
+          {{ etiqueta }}
+          @if (requerido) { <span class="text-red-500">*</span> }
+        </label>
       }
       <select [id]="id" [ngModel]="valor" (ngModelChange)="onCambio($event)"
         class="w-full px-3 py-2 border rounded-lg text-sm bg-white transition-colors duration-150
                focus:outline-none focus:ring-2 focus:ring-offset-0
                disabled:bg-gray-100 disabled:cursor-not-allowed"
         [class]="clasesSelect">
-        @if (placeholder) { <option value="" disabled>{{ placeholder }}</option> }
+        @if (placeholder) { <option value="">{{ placeholder }}</option> }
         @for (op of opciones; track op.valor) {
           <option [value]="op.valor">{{ op.etiqueta }}</option>
         }
@@ -32,6 +35,7 @@ export class SelectorComponent {
   @Input() valor: string = '';
   @Input() error: string = '';
   @Input() placeholder: string = '';
+  @Input() requerido: boolean = false;
   @Output() valorCambio = new EventEmitter<string>();
 
   get clasesSelect(): string {

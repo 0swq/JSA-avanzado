@@ -4,9 +4,6 @@ export interface CrearRecursoDigitalDto {
   tipo: string;
   url: string;
   formato?: string;
-  tamanioMb?: number;
-  duracionMinutos?: number;
-  tipoAcceso?: string;
 }
 
 export interface ActualizarRecursoDigitalDto {
@@ -14,9 +11,6 @@ export interface ActualizarRecursoDigitalDto {
   tipo?: string;
   url?: string;
   formato?: string;
-  tamanioMb?: number;
-  duracionMinutos?: number;
-  tipoAcceso?: string;
 }
 
 export interface RespuestaRecursoDigitalDto {
@@ -25,8 +19,5 @@ export interface RespuestaRecursoDigitalDto {
   tipo: string;
   url: string;
   formato: string | null;
-  tamanioMb: number | null;
-  duracionMinutos: number | null;
-  tipoAcceso: string | null;
   creadoEn: Date;
 }
